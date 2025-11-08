@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // Fix the import line
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 
 // Auth Pages
@@ -22,6 +22,13 @@ import Attendence from "./pages/dashboards/hr/Attendence";
 import Leaves from "./pages/dashboards/hr/Leaves";
 import PayrollDashboard from "./pages/dashboards/payroll/PayrollDashboard"; // Corrected to point to Payroll Officer Dashboard
 import EmployeeDashboard from "./pages/dashboards/EmployeeDashboard";
+import Layout from "@/components/Layout";
+// 🔹 Payroll Officer Pages
+import EmployeesPage from "./pages/dashboards/payroll/EmployeesPage";
+import ReportsPage from "./pages/dashboards/payroll/ReportsPage";
+import AnalyticsPage from "./pages/dashboards/payroll/AnalyticsPage";
+import SettingsPage from "./pages/dashboards/payroll/SettingsPage";
+
 
 function App() {
   return (
@@ -50,9 +57,15 @@ function App() {
           <Route path="/hr/attendance" element={<Attendence />} />
           <Route path="/hr/leaves" element={<Leaves />} />
           
-          {/* Payroll Routes */}
-          {/* Using the detailed PayrollDashboard for the Payroll Officer */}
-          <Route path="/payroll/dashboard" element={<PayrollDashboard />} /> 
+          {/* ─── Payroll Officer Section (Nested with Sidebar) ───── */}
+          <Route path="/payroll" element={<Layout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<PayrollDashboard />} />
+            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
           
           {/* Employee Routes */}
           <Route path="/employee/dashboard" element={<EmployeeDashboard />} />

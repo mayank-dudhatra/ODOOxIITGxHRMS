@@ -9,13 +9,11 @@ import {
   ListItemText,
   Box,
   Typography,
-  Divider,
   useTheme,
 } from "@mui/material";
 import {
   Dashboard,
   People,
-  Payments,
   Summarize,
   BarChart,
   Settings,
@@ -23,7 +21,7 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const drawerWidth = 280;
+const drawerWidth = 300; // ⬅️ Increased from 280 → 300 for better space
 
 export default function Sidebar() {
   const theme = useTheme();
@@ -63,10 +61,10 @@ export default function Sidebar() {
               bgcolor: "primary.main",
               color: "white",
               borderRadius: 2,
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               fontWeight: 600,
-              fontSize: "1.1rem",
+              fontSize: "1.2rem",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -90,7 +88,7 @@ export default function Sidebar() {
       </Box>
 
       {/* ─── Navigation Section ─────────────────────────── */}
-      <Box sx={{ flexGrow: 1, overflowY: "auto", py: 2 }}>
+      <Box sx={{ flexGrow: 1, overflowY: "auto", py: 3 }}>
         <List>
           {menuItems.map((item) => {
             const isActive =
@@ -99,15 +97,14 @@ export default function Sidebar() {
                 location.pathname === "/payroll");
 
             return (
-              <ListItem key={item.label} disablePadding>
+              <ListItem key={item.label} disablePadding sx={{ mb: 1.5 }}> {/* ⬅️ Added extra spacing between items */}
                 <ListItemButton
                   onClick={() => navigate(item.path)}
                   selected={isActive}
                   sx={{
-                    py: 1.3,
+                    py: 1.5, // ⬅️ Slightly taller buttons
                     px: 3,
                     mx: 1.5,
-                    mb: 0.5,
                     borderRadius: 2,
                     color: isActive
                       ? "primary.main"
@@ -126,7 +123,7 @@ export default function Sidebar() {
                       color: isActive
                         ? theme.palette.primary.main
                         : theme.palette.text.secondary,
-                      minWidth: 36,
+                      minWidth: 40,
                     }}
                   >
                     {item.icon}
@@ -135,7 +132,7 @@ export default function Sidebar() {
                     primary={item.label}
                     primaryTypographyProps={{
                       fontWeight: isActive ? 600 : 500,
-                      fontSize: "0.95rem",
+                      fontSize: "1rem", // ⬅️ Slightly bigger text
                     }}
                   />
                 </ListItemButton>
