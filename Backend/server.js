@@ -1,36 +1,82 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import companyRoutes from './routes/companyRoutes.js';
-import authRoutes from './routes/authRoutes.js'; // 1. IMPORTED
-import connectDB from './config/db.js'; // 2. IMPORTED
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js"; // ✅ MongoDB Connection
 
-// Load environment variables
+// 🔹 Import Routes
+import companyRoutes from "./routes/companyRoutes.js";
+import payrollRoutes from "./routes/payrollRoutes.js";
+import payslipRoutes from "./routes/payslipRoutes.js";
+import leaveRoutes from "./routes/leaveRoutes.js";
+import employeeRoutes from "./routes/employeeRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import authRoutes from "./routes/authRoutes.js"; // ✅ Authentication Routes
+
+// 🔹 Load Environment Variables
 dotenv.config();
 
+// 🔹 Initialize Express App
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ✅ Connect MongoDB
+connectDB()
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Failed:", err);
+    process.exit(1);
+  });
+
+// ✅ Middleware Configuration
+app.use(
+  cors({
+    origin: ["http://localhost:5173"], // 👈 React frontend origin
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// API Routes
-app.use('/api/company', companyRoutes);
-app.use('/api/auth', authRoutes); // 3. USED
+// ✅ API Routes (All Modules)
+app.use("/api/auth", authRoutes);
+app.use("/api/company", companyRoutes);
+app.use("/api/employees", employeeRoutes);
+app.use("/api/payroll", payrollRoutes);
+app.use("/api/payslip", payslipRoutes);
+app.use("/api/leave", leaveRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.send('Workzen SHRMS API is running...');
+// ✅ Root Route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "🚀 WorkZen SHRMS API is running successfully!",
+    environment: process.env.NODE_ENV || "development",
+    version: "1.0.0",
+    author: "Team WorkZen",
+  });
 });
 
-// 4. CONNECT TO DB AND START SERVER
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`✅ Server is running on http://localhost:${PORT}`);
+// ✅ 404 Route Handler (Unknown APIs)
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.originalUrl}`,
   });
-}).catch(err => {
-  console.error("Failed to connect to MongoDB", err);
-  process.exit(1);
+});
+
+// ✅ Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("❌ Global Error Handler:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+});
+
+// ✅ Start Server
+app.listen(PORT, () => {
+  console.log(`✅ Server running at: http://localhost:${PORT}`);
 });
