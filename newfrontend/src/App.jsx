@@ -62,31 +62,11 @@ function App() {
           {/* Auth Routes */}
           <Route path="/" element={<CompanyRegister />} />
           <Route path="/login" element={<Login />} />
-<<<<<<< HEAD
-
-          {/* --- NEW COMPANY ADMIN ROUTE (LAYOUT) --- */}
-          {/* This one Route handles all /company/dashboard/... paths */}
-          <Route path="/company/dashboard" element={<AdminLayout />}>
-            {/* The index route is the dashboard page */}
-            <Route index element={<AdminDashboard />} /> 
-            {/* All other admin pages are children */}
-            <Route path="employees" element={<EmployeeManagement />} />
-            <Route path="hr" element={<HRManagement />} />
-            <Route path="attendance" element={<AttendanceManagement />} />
-            <Route path="leaves" element={<LeaveManagement />} />
-            <Route path="payroll" element={<PayrollManagement />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-
-          {/* Existing Role-Specific Routes */}
-          <Route path="/hr/dashboard" element={<HRDashboard />} />
-=======
           <Route path="/company/dashboard" element={<CompanyDashboard />} />
           <Route path="hr/dashboard" element={<HRDashboard />} />
           <Route path="/hr/employees" element={<Employees />} />
           <Route path="/hr/attendance" element={<Attendence />} />
           <Route path="/hr/leaves" element={<Leaves />} />
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
           <Route path="/payroll/dashboard" element={<PayrollDashboard />} />
           <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
           
