@@ -11,7 +11,12 @@ export const generateLoginId = async (companyId, firstName, lastName, joiningDat
   const year = new Date(joiningDate).getFullYear();
 
   const regex = new RegExp(`^${companyCode}${f}${l}${year}`);
-  const count = await User.countDocuments({ loginId: { $regex: regex } });
+  
+  // 🚩 FIX 2: Added 'company' filter to ensure uniqueness is scoped to the company.
+  const count = await User.countDocuments({ 
+    company: companyId,
+    loginId: { $regex: regex } 
+  });
 
   const serial = String(count + 1).padStart(4, "0");
   return `${companyCode}${f}${l}${year}${serial}`;

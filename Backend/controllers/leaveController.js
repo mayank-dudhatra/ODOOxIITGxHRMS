@@ -4,6 +4,29 @@ import Leave from "../models/Leave.js";
    🧾 LEAVE CONTROLLER — For Payroll Officer & HR
    ============================================================ */
 
+// 🔹 Request a new leave (Employee Role)
+export const requestLeave = async (req, res) => {
+  try {
+    const { employeeId, employeeName, leaveType, startDate, endDate, reason } = req.body;
+
+    const newLeave = new Leave({
+      employeeId,
+      employeeName,
+      leaveType,
+      startDate,
+      endDate,
+      reason,
+      status: "Pending",
+    });
+
+    await newLeave.save();
+    res.status(201).json({ message: "Leave request submitted successfully", leave: newLeave });
+  } catch (error) {
+    console.error("❌ Error submitting leave request:", error);
+    res.status(500).json({ message: "Failed to submit leave request" });
+  }
+};
+
 // 🔹 Get all pending leave requests
 export const getPendingLeaves = async (req, res) => {
   try {

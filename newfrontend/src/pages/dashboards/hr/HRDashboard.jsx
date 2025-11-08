@@ -20,13 +20,27 @@ import { getHREmployees, getHRLeaveRequests, approveHRLeave, rejectHRLeave } fro
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; 
 
+<<<<<<< HEAD
 // DashboardCard component remains the same
 const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) => {
+=======
+// FIX: DashboardCard now receives 'navigate' as a prop and avoids calling useNavigate() internally.
+const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link, navigate }) => {
+  // Removed internal useNavigate hook call
+
+  const handleClick = () => {
+    if (link) {
+      navigate(link); // Use the passed navigate function for client-side routing
+    }
+  };
+
+
   return (
     <div
       className={`bg-white rounded-lg shadow-md p-5 border border-gray-200 flex flex-col justify-between h-full 
                  transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 cursor-pointer`}
-      onClick={() => link && window.location.href(link)}
+      // FIX: Use the new handleClick function for proper routing.
+      onClick={link ? handleClick : undefined}
     >
       <div className="flex items-start justify-between">
         <p className="text-sm text-gray-500 font-medium mb-4">{title}</p>
@@ -58,7 +72,7 @@ const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) =>
 
 
 const HRDashboard = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Correct hook call in the main component
   const [userRole] = useState('HR');
   const [loading, setLoading] = useState(true); 
   const [employees, setEmployees] = useState([]); 
@@ -204,7 +218,8 @@ const HRDashboard = () => {
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {stats.map((stat, i) => (
-                <DashboardCard key={i} {...stat} link={stat.link} />
+                // FIX: Pass the navigate function as a prop
+                <DashboardCard key={i} {...stat} navigate={navigate} />
               ))}
             </div>
 

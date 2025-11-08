@@ -11,7 +11,7 @@ import leaveRoutes from "./routes/leaveRoutes.js";
 import employeeRoutes from "./routes/employeeRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import authRoutes from "./routes/authRoutes.js"; // ✅ Authentication Routes
-import hrRoutes from "./routes/hrRoutes.js"; // ✅ HR Routes [NEW]
+import attendanceRoutes from "./routes/attendanceRoutes.js"; // ✅ ADD THIS IMPORT
 
 // 🔹 Load Environment Variables
 dotenv.config();
@@ -47,7 +47,6 @@ app.use("/api/payroll", payrollRoutes);
 app.use("/api/payslip", payslipRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/hr", hrRoutes); // [NEW] Mount HR Routes
 
 // ✅ Root Route
 app.get("/", (req, res) => {

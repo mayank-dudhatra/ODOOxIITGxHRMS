@@ -4,9 +4,13 @@ import {
   approveLeave,
   rejectLeave,
   getAllLeaves,
+  requestLeave, // ✅ Now correctly imported
 } from "../controllers/leaveController.js";
 
 const router = express.Router();
+
+// 🔹 POST a new leave request (Employee submission)
+router.post("/request", requestLeave);
 
 // 🔹 GET all pending leaves
 router.get("/pending", getPendingLeaves);
