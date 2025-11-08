@@ -4,29 +4,24 @@ import {
   approveLeave,
   rejectLeave,
   getAllLeaves,
-  requestLeave, // ✅ Add for employee leave submission
+  requestLeave, // ✅ Now correctly imported
 } from "../controllers/leaveController.js";
-import { authMiddleware } from "../middleware/authMiddleware.js"; // optional if using auth
 
 const router = express.Router();
 
-/**
- * 🧾 Leave Routes — Used by Employees, HR, and Payroll Officers
- */
+// 🔹 POST a new leave request (Employee submission)
+router.post("/request", requestLeave);
 
-// 🟢 Employee — Request new leave
-router.post("/request", /* authMiddleware, */ requestLeave);
+// 🔹 GET all pending leaves
+router.get("/pending", getPendingLeaves);
 
-// 🟡 HR / Payroll — Get all pending leave requests
-router.get("/pending", /* authMiddleware, */ getPendingLeaves);
+// 🔹 POST approve a leave
+router.post("/approve/:id", approveLeave);
 
-// 🟠 HR / Admin — Get all leaves (approved/rejected too)
-router.get("/all", /* authMiddleware, */ getAllLeaves);
+// 🔹 POST reject a leave
+router.post("/reject/:id", rejectLeave);
 
-// ✅ Approve a leave request
-router.put("/approve/:id", /* authMiddleware, */ approveLeave);
-
-// ❌ Reject a leave request
-router.put("/reject/:id", /* authMiddleware, */ rejectLeave);
+// 🔹 (Optional) GET all leaves
+router.get("/all", getAllLeaves);
 
 export default router;

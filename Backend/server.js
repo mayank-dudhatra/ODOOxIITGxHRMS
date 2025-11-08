@@ -11,6 +11,7 @@ import leaveRoutes from "./routes/leaveRoutes.js";
 import employeeRoutes from "./routes/employeeRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import authRoutes from "./routes/authRoutes.js"; // ✅ Authentication Routes
+import attendanceRoutes from "./routes/attendanceRoutes.js"; // ✅ ADD THIS IMPORT
 
 // 🔹 Load Environment Variables
 dotenv.config();

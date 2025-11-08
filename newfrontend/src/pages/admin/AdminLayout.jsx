@@ -1,7 +1,8 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import Navbar from '../../components/Navbar'; 
+// FIX: Change the import path to correctly point to the Navbar component
+import Navbar from '../dashboards/hr/Navbar'; 
 import AdminSidebar from '../../components/admin/AdminSidebar'; 
 
 const AdminLayout = () => {
