@@ -45,6 +45,9 @@ import Settings from "./pages/admin/Settings";
 
 // Existing Role Dashboards
 import HRDashboard from "./pages/dashboards/hr/HRDashboard";
+import Employees from "./pages/dashboards/hr/Employees";
+import Attendence from "./pages/dashboards/hr/Attendence";
+import Leaves from "./pages/dashboards/hr/Leaves";
 import PayrollDashboard from "./pages/dashboards/PayrollDashboard";
 import EmployeeDashboard from "./pages/dashboards/EmployeeDashboard";
 
@@ -59,6 +62,7 @@ function App() {
           {/* Auth Routes */}
           <Route path="/" element={<CompanyRegister />} />
           <Route path="/login" element={<Login />} />
+<<<<<<< HEAD
 
           {/* --- NEW COMPANY ADMIN ROUTE (LAYOUT) --- */}
           {/* This one Route handles all /company/dashboard/... paths */}
@@ -76,6 +80,13 @@ function App() {
 
           {/* Existing Role-Specific Routes */}
           <Route path="/hr/dashboard" element={<HRDashboard />} />
+=======
+          <Route path="/company/dashboard" element={<CompanyDashboard />} />
+          <Route path="hr/dashboard" element={<HRDashboard />} />
+          <Route path="/hr/employees" element={<Employees />} />
+          <Route path="/hr/attendance" element={<Attendence />} />
+          <Route path="/hr/leaves" element={<Leaves />} />
+>>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
           <Route path="/payroll/dashboard" element={<PayrollDashboard />} />
           <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
           
