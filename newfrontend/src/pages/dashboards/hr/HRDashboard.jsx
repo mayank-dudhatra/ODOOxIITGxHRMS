@@ -1,4 +1,6 @@
-import { useState } from 'react';
+// src/pages/dashboards/hr/HRDashboard.jsx
+
+import { useState, useEffect } from 'react'; 
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   FiUsers, 
@@ -8,13 +10,17 @@ import {
   FiChevronRight,
   FiUser,
   FiArrowUpRight,
-  FiArrowDownRight
+  FiArrowDownRight,
+  FiLoader 
 } from 'react-icons/fi';
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
+// [CHANGE] Import API functions
+import { getHREmployees, getHRLeaveRequests, approveHRLeave, rejectHRLeave } from '../../../api/hr'; 
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; 
 
+// DashboardCard component remains the same
 const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) => {
   return (
     <div
@@ -50,27 +56,135 @@ const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) =>
   );
 };
 
+
 const HRDashboard = () => {
   const navigate = useNavigate();
   const [userRole] = useState('HR');
-
-  const stats = [
-    { title: "Total Employees", value: "128", icon: FiUsers, colorClass: 'text-blue-500', trend: 3, link: '/hr/employees' },
-    { title: "Pending Leave Requests", value: "5", icon: FiCalendar, colorClass: 'text-yellow-500', trend: 2, link: '/hr/leaves' },
-    { title: "Attendance Rate Today", value: "92.5%", icon: FiClock, colorClass: 'text-green-500', trend: 0, link: '/hr/attendance' },
-    { title: "New Hires (Month)", value: "4", icon: FiUser, colorClass: 'text-sky-500', trend: 15, link: '/hr/employees' },
-  ];
-
-  const recentRequests = [
-    { id: 1, name: 'John Doe', type: 'Sick Leave', duration: '2 days', status: 'Pending' },
-    { id: 2, name: 'Jane Smith', type: 'Casual Leave', duration: '1 day', status: 'Pending' },
-    { id: 3, name: 'Mike Johnson', type: 'Annual Leave', duration: '5 days', status: 'Pending' },
-    { id: 4, name: 'Sarah Williams', type: 'Sick Leave', duration: '1 day', status: 'Approved' },
-  ];
+  const [loading, setLoading] = useState(true); 
+  const [employees, setEmployees] = useState([]); 
+  const [leaves, setLeaves] = useState([]); 
 
   const handleLogout = () => {
     navigate('/login');
   };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch all required data in parallel
+      const [employeeRes, leavesRes] = await Promise.all([
+        getHREmployees(), 
+        getHRLeaveRequests(), 
+      ]);
+      setEmployees(employeeRes.data || []);
+      setLeaves(leavesRes.data || []);
+    } catch (error) {
+      console.error("Error fetching HR dashboard data:", error);
+      // Fail gracefully
+      setEmployees([]);
+      setLeaves([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // --- Real Data Calculation ---
+  const totalEmployees = employees.length;
+  // Filter for leaves with status 'Pending' (case-sensitive to the Mongoose enum)
+  const pendingRequests = leaves.filter(l => l.status === 'Pending');
+  
+  // --- Dashboard Stat Cards Data ---
+  const stats = [
+    { 
+      title: "Total Employees", 
+      // [CHANGE] Use real total employee count
+      value: loading ? <FiLoader className="animate-spin inline" /> : totalEmployees, 
+      icon: FiUsers, 
+      colorClass: 'text-blue-500', 
+      trend: 3, 
+      link: '/hr/employees' 
+    },
+    { 
+      title: "Pending Leave Requests", 
+      // [CHANGE] Use real pending request count
+      value: loading ? <FiLoader className="animate-spin inline" /> : pendingRequests.length, 
+      icon: FiCalendar, 
+      colorClass: 'text-yellow-500', 
+      trend: 2, 
+      link: '/hr/leaves' 
+    },
+    { 
+      title: "Attendance Rate Today", 
+      value: "92.5%", // Mocked - requires attendance summary API
+      icon: FiClock, 
+      colorClass: 'text-green-500', 
+      trend: 0, 
+      link: '/hr/attendance' 
+    },
+    { 
+      title: "New Hires (Month)", 
+      value: "4", // Mocked - requires new hires count API
+      icon: FiUser, 
+      colorClass: 'text-sky-500', 
+      trend: 15, 
+      link: '/hr/employees' 
+    },
+  ];
+
+  // --- Leave Requests Table Data ---
+  // Take the first 5 pending requests for the dashboard preview
+  const recentPendingRequests = pendingRequests.slice(0, 5).map(leave => {
+    // Determine employee name from the populated employeeId object (User model)
+    const employeeName = leave.employeeId?.firstName && leave.employeeId?.lastName
+        ? `${leave.employeeId.firstName} ${leave.employeeId.lastName}`
+        : leave.employeeName || 'Unknown User'; 
+    
+    // Calculate duration in days (including start and end day)
+    const startDate = new Date(leave.startDate);
+    const endDate = new Date(leave.endDate);
+    const timeDiff = Math.abs(endDate.getTime() - startDate.getTime());
+    const durationDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+    return {
+      id: leave._id,
+      name: employeeName,
+      type: leave.leaveType,
+      duration: `${durationDays} day${durationDays > 1 ? 's' : ''}`,
+      status: leave.status,
+    };
+  });
+
+  // --- Action Handlers for the Dashboard Table ---
+  const handleLeaveAction = async (id, action) => {
+    setLoading(true);
+    try {
+        if (action === 'approve') {
+            await approveHRLeave(id);
+        } else {
+            await rejectHRLeave(id);
+        }
+        await fetchData(); // Refresh data after action
+    } catch (err) {
+        console.error(`Error ${action}ing leave:`, err);
+        alert(`Failed to ${action} leave request. Check console for details.`);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50 items-center justify-center">
+        <FiLoader className="w-8 h-8 animate-spin text-indigo-600" />
+        <p className="ml-3 text-lg text-gray-700">Loading HR Dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -100,7 +214,7 @@ const HRDashboard = () => {
               <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6 border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">
-                    Recent Leave Requests ({recentRequests.filter(r => r.status === 'Pending').length} Pending)
+                    Recent Leave Requests ({pendingRequests.length} Pending)
                   </h3>
                   <NavLink
                     to="/hr/leaves"
@@ -122,47 +236,61 @@ const HRDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentRequests.map((request) => (
-                        <tr
-                          key={request.id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="py-3 px-3 font-medium">{request.name}</td>
-                          <td className="py-3 px-3">{request.type}</td>
-                          <td className="py-3 px-3">{request.duration}</td>
-                          <td className="py-3 px-3">
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                request.status === 'Pending'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
-                              }`}
-                            >
-                              {request.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            {request.status === 'Pending' ? (
-                              <div className="flex justify-end gap-3">
-                                <button className="text-green-600 hover:text-green-500 text-sm font-medium">
-                                  Approve
-                                </button>
-                                <button className="text-red-500 hover:text-red-400 text-sm font-medium">
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {recentPendingRequests.length === 0 ? (
+                          <tr>
+                            <td colSpan="5" className="text-center py-4 text-gray-500 italic">No pending leave requests found.</td>
+                          </tr>
+                      ) : (
+                        recentPendingRequests.map((request) => (
+                          <tr
+                            key={request.id}
+                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-3 px-3 font-medium">{request.name}</td>
+                            <td className="py-3 px-3 capitalize">{request.type}</td>
+                            <td className="py-3 px-3">{request.duration}</td>
+                            <td className="py-3 px-3">
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                  request.status === 'Pending'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-green-100 text-green-700'
+                                }`}
+                              >
+                                {request.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              {request.status === 'Pending' ? (
+                                <div className="flex justify-end gap-3">
+                                  <button 
+                                    className="text-green-600 hover:text-green-500 text-sm font-medium"
+                                    onClick={() => handleLeaveAction(request.id, 'approve')}
+                                    disabled={loading}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button 
+                                    className="text-red-500 hover:text-red-400 text-sm font-medium"
+                                    onClick={() => handleLeaveAction(request.id, 'reject')}
+                                    disabled={loading}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* Quick Links */}
+              {/* Quick Links (remains the same) */}
               <div className="lg:col-span-1 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800">Management Quick Links</h3>
                 <NavLink
@@ -209,7 +337,7 @@ const HRDashboard = () => {
               </div>
             </div>
 
-            {/* Attendance Chart */}
+            {/* Attendance Chart (remains the same) */}
             <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Weekly Attendance Trend</h3>

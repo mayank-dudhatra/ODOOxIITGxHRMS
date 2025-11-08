@@ -1,18 +1,19 @@
+// src/pages/dashboards/hr/Attendence.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiClock, FiPlusCircle, FiSearch, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiClock, FiPlusCircle, FiSearch, FiEdit, FiTrash2, FiSave, FiLoader } from 'react-icons/fi'; 
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
-import api from '../../../api/axiosConfig';
-
-// Mock Base URL for the API
-const API_BASE_URL = '/attendance'; 
+// [CHANGE] Import API functions from new hr.js
+import { markAttendance, getAttendanceRecords, updateAttendance, deleteAttendance } from '../../../api/hr'; 
 
 // Helper function to format date/time
-const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString();
+const formatDateTime = (dateObject) => {
+    if (!dateObject) return 'N/A';
+    const datePart = dateObject.toLocaleDateString();
+    const timePart = dateObject.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${datePart} ${timePart}`;
 };
 
 const HRAttendancePage = () => {
@@ -26,10 +27,13 @@ const HRAttendancePage = () => {
     const [filterId, setFilterId] = useState('');
     const [newRecordData, setNewRecordData] = useState({ 
         employeeId: '', 
-        clockInTime: '', 
-        clockOutTime: '' 
+        // Default to today's date and current time for manual entry
+        date: new Date().toISOString().substring(0, 10), 
+        checkIn: new Date().toTimeString().substring(0, 5), 
+        checkOut: '', 
+        status: 'Present'
     });
-    const [isEditing, setIsEditing] = useState(null); // ID of the record being edited
+    const [isEditing, setIsEditing] = useState(null); 
     const [editData, setEditData] = useState({});
 
     // Fetch records based on filter ID or all records
@@ -37,11 +41,11 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            const url = id ? `${API_BASE_URL}/${id}` : API_BASE_URL;
-            const response = await api.get(url);
+            // [CHANGE] Use dedicated API function
+            const response = await getAttendanceRecords(id); 
             setRecords(response.data);
         } catch (err) {
-            setError('Error fetching attendance records.');
+            setError(err.response?.data?.message || 'Error fetching attendance records.');
             setRecords([]);
         } finally {
             setLoading(false);
@@ -59,9 +63,22 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            await api.post(`${API_BASE_URL}/mark`, newRecordData);
-            setNewRecordData({ employeeId: '', clockInTime: '', clockOutTime: '' });
-            fetchRecords(filterId); // Refresh list
+            // [CHANGE] Use dedicated API function with correct fields
+            await markAttendance({
+                employeeId: newRecordData.employeeId,
+                date: newRecordData.date, // 'YYYY-MM-DD'
+                checkIn: newRecordData.checkIn, // 'HH:MM'
+                checkOut: newRecordData.checkOut || null,
+                status: newRecordData.status
+            });
+            setNewRecordData({ 
+                employeeId: '', 
+                date: new Date().toISOString().substring(0, 10), 
+                checkIn: new Date().toTimeString().substring(0, 5), 
+                checkOut: '', 
+                status: 'Present'
+            });
+            fetchRecords(filterId); 
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to mark attendance.');
         } finally {
@@ -75,9 +92,10 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            await api.patch(`${API_BASE_URL}/${isEditing}`, editData);
+            // [CHANGE] Use dedicated API function
+            await updateAttendance(isEditing, editData);
             setIsEditing(null);
-            fetchRecords(filterId); // Refresh list
+            fetchRecords(filterId); 
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update record.');
         } finally {
@@ -91,8 +109,9 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            await api.delete(`${API_BASE_URL}/${id}`);
-            fetchRecords(filterId); // Refresh list
+            // [CHANGE] Use dedicated API function
+            await deleteAttendance(id); 
+            fetchRecords(filterId); 
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to delete record.');
         } finally {
@@ -102,21 +121,32 @@ const HRAttendancePage = () => {
     
     // Start editing a record
     const startEdit = (record) => {
-        // Prepare data for editing, ensuring dates are in correct format for input fields
-        const clockIn = record.clockInTime ? new Date(record.clockInTime).toISOString().substring(0, 16) : '';
-        const clockOut = record.clockOutTime ? new Date(record.clockOutTime).toISOString().substring(0, 16) : '';
-        
+        // [CHANGE] Map existing data to edit state, ensuring date is formatted correctly
         setEditData({
-            clockInTime: clockIn,
-            clockOutTime: clockOut,
+            checkIn: record.checkIn,
+            checkOut: record.checkOut || '',
+            date: new Date(record.date).toISOString().substring(0, 10),
+            status: record.status
         });
         setIsEditing(record._id);
     };
 
     // Render Table Row
     const RecordRow = ({ record }) => {
-        const employeeName = record.employeeId?.name || record.employeeId || 'N/A';
+        // [CHANGE] Get employee name from populated object (User model)
+        const employeeName = record.employeeId?.firstName && record.employeeId?.lastName 
+            ? `${record.employeeId.firstName} ${record.employeeId.lastName}` 
+            : record.employeeId?.email || record.employeeId || 'N/A';
+            
         const isCurrentlyEditing = isEditing === record._id;
+
+        // Combine date and time for display
+        const checkInTime = record.checkIn ? `${record.date.substring(0, 10)}T${record.checkIn}` : null;
+        const checkOutTime = record.checkOut ? `${record.date.substring(0, 10)}T${record.checkOut}` : null;
+
+        let checkInDisplay = checkInTime ? formatDateTime(new Date(checkInTime)) : 'N/A';
+        let checkOutDisplay = checkOutTime ? formatDateTime(new Date(checkOutTime)) : 'N/A';
+
 
         if (isCurrentlyEditing) {
             return (
@@ -124,19 +154,40 @@ const HRAttendancePage = () => {
                     <td className="py-3 px-3 font-medium text-gray-900">{employeeName}</td>
                     <td className="py-3 px-3">
                         <input
-                            type="datetime-local"
-                            value={editData.clockInTime}
-                            onChange={(e) => setEditData({ ...editData, clockInTime: e.target.value })}
+                            type="date"
+                            value={editData.date}
+                            onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+                            className="p-1 border rounded text-sm w-full mb-1"
+                            required
+                        />
+                        <input
+                            type="time"
+                            value={editData.checkIn}
+                            onChange={(e) => setEditData({ ...editData, checkIn: e.target.value })}
                             className="p-1 border rounded text-sm w-full"
+                            required
                         />
                     </td>
                     <td className="py-3 px-3">
                         <input
-                            type="datetime-local"
-                            value={editData.clockOutTime}
-                            onChange={(e) => setEditData({ ...editData, clockOutTime: e.target.value })}
+                            type="time"
+                            value={editData.checkOut}
+                            onChange={(e) => setEditData({ ...editData, checkOut: e.target.value })}
                             className="p-1 border rounded text-sm w-full"
                         />
+                    </td>
+                    <td className="py-3 px-3">
+                         <select
+                            value={editData.status}
+                            onChange={(e) => setEditData({ ...editData, status: e.target.value })}
+                            className="p-1 border rounded text-sm w-full"
+                            required
+                        >
+                            <option value="Present">Present</option>
+                            <option value="Late">Late</option>
+                            <option value="Absent">Absent</option>
+                            <option value="On Leave">On Leave</option>
+                        </select>
                     </td>
                     <td className="py-3 px-3 text-right space-x-2">
                         <button 
@@ -159,8 +210,17 @@ const HRAttendancePage = () => {
         return (
             <tr className="border-b hover:bg-gray-50">
                 <td className="py-3 px-3 font-medium text-gray-900">{employeeName}</td>
-                <td className="py-3 px-3">{formatDateTime(record.clockInTime)}</td>
-                <td className="py-3 px-3">{record.clockOutTime ? formatDateTime(record.clockOutTime) : 'N/A'}</td>
+                <td className="py-3 px-3">{checkInDisplay}</td>
+                <td className="py-3 px-3">{checkOutDisplay}</td>
+                <td className="py-3 px-3">
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        record.status === 'Present' ? 'bg-green-100 text-green-700' :
+                        record.status === 'Late' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
+                    }`}>
+                        {record.status}
+                    </span>
+                </td>
                 <td className="py-3 px-3 text-right space-x-2">
                     <button 
                         onClick={() => startEdit(record)} 
@@ -211,21 +271,41 @@ const HRAttendancePage = () => {
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
-                                <label className="block text-sm font-medium text-gray-700">Clock-In Time</label>
+                                <label className="block text-sm font-medium text-gray-700">Date</label>
                                 <input
-                                    type="datetime-local"
-                                    value={newRecordData.clockInTime}
-                                    onChange={(e) => setNewRecordData({ ...newRecordData, clockInTime: e.target.value })}
+                                    type="date"
+                                    value={newRecordData.date}
+                                    onChange={(e) => setNewRecordData({ ...newRecordData, date: e.target.value })}
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
-                                <label className="block text-sm font-medium text-gray-700">Clock-Out Time (Optional)</label>
+                                <label className="block text-sm font-medium text-gray-700">Check-In Time</label>
                                 <input
-                                    type="datetime-local"
-                                    value={newRecordData.clockOutTime}
-                                    onChange={(e) => setNewRecordData({ ...newRecordData, clockOutTime: e.target.value })}
+                                    type="time"
+                                    value={newRecordData.checkIn}
+                                    onChange={(e) => setNewRecordData({ ...newRecordData, checkIn: e.target.value })}
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                                <label className="block text-sm font-medium text-gray-700">Check-Out Time (Optional)</label>
+                                <input
+                                    type="time"
+                                    value={newRecordData.checkOut}
+                                    onChange={(e) => setNewRecordData({ ...newRecordData, checkOut: e.target.value })}
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
                                 />
+                                <label className="block text-sm font-medium text-gray-700">Status</label>
+                                <select
+                                    value={newRecordData.status}
+                                    onChange={(e) => setNewRecordData({ ...newRecordData, status: e.target.value })}
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                >
+                                    <option value="Present">Present</option>
+                                    <option value="Late">Late</option>
+                                    <option value="Absent">Absent</option>
+                                    <option value="On Leave">On Leave</option>
+                                </select>
                                 <button 
                                     type="submit" 
                                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg transition-colors disabled:opacity-50"
@@ -242,7 +322,6 @@ const HRAttendancePage = () => {
                                 <FiSearch /> Filter & All Records
                             </h2>
                             
-                            {/* Filter Section (GET /attendance & GET /attendance/:employeeId) */}
                             <div className="flex items-center gap-3 mb-6 p-4 border rounded-lg bg-gray-50">
                                 <input
                                     type="text"
@@ -273,16 +352,17 @@ const HRAttendancePage = () => {
                                     <thead className="bg-gray-50">
                                         <tr>
                                             <th className="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                                            <th className="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock-In</th>
-                                            <th className="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock-Out</th>
+                                            <th className="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-In</th>
+                                            <th className="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-Out</th>
+                                            <th className="py-3 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                             <th className="py-3 px-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {loading ? (
-                                            <tr><td colSpan="4" className="text-center py-4 text-gray-500">Loading records...</td></tr>
+                                            <tr><td colSpan="5" className="text-center py-4 text-gray-500"><FiLoader className="animate-spin inline mr-2"/> Loading records...</td></tr>
                                         ) : records.length === 0 ? (
-                                            <tr><td colSpan="4" className="text-center py-4 text-gray-500">No attendance records found.</td></tr>
+                                            <tr><td colSpan="5" className="text-center py-4 text-gray-500">No attendance records found.</td></tr>
                                         ) : (
                                             records.map(record => (
                                                 <RecordRow key={record._id} record={record} />

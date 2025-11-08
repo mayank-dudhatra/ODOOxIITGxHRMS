@@ -4,19 +4,21 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
-import api from '../../../api/axiosConfig'; // Use the configured axios instance
-import { FiUsers, FiSearch, FiSave } from 'react-icons/fi'; // Icons for visual appeal
+// [CHANGE] Import API functions from new hr.js
+import { getHREmployees, getHREmployeeProfile, updateHREmployeeProfile } from '../../../api/hr'; 
+import { FiUsers, FiSearch, FiSave } from 'react-icons/fi'; 
 
-// Mock Base URL for the API
+// Mock Base URL is no longer strictly needed but kept for context
 const API_BASE_URL = '/hr/employees'; 
 
 // --- Component 1: Employee List Item ---
-// Converted to Tailwind CSS
 const EmployeeListItem = ({ employee }) => (
   <li className="p-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex justify-between items-center">
     <div>
-      <p className="font-semibold text-gray-800">{employee.name}</p>
-      <p className="text-sm text-gray-500">{employee.department}</p>
+      {/* [CHANGE] Use firstName and lastName */}
+      <p className="font-semibold text-gray-800">{employee.firstName} {employee.lastName}</p>
+      {/* [CHANGE] Use email and role from the User model */}
+      <p className="text-sm text-gray-500">{employee.email} ({employee.role})</p>
     </div>
     <small className="text-xs text-gray-400">ID: {employee._id}</small>
   </li>
@@ -27,12 +29,12 @@ const HREmployeeManagementPage = () => {
   const [employees, setEmployees] = useState([]);
   const [singleEmployee, setSingleEmployee] = useState(null);
   const [employeeIdInput, setEmployeeIdInput] = useState('');
-  const [updateData, setUpdateData] = useState({ name: '', department: '' });
+  // [CHANGE] Fields to manage for update
+  const [updateData, setUpdateData] = useState({ firstName: '', lastName: '', email: '', role: '' }); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
   const navigate = useNavigate();
-  // Mock role and logout for layout integration
   const [userRole] = useState('HR'); 
   const handleLogout = () => navigate('/login');
 
@@ -41,13 +43,12 @@ const HREmployeeManagementPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // NOTE: Using window.fetch for simplicity, but in a real app, use the imported 'api' axios instance.
-      const response = await fetch(API_BASE_URL); 
-      if (!response.ok) throw new Error('Failed to fetch list.');
-      const data = await response.json();
-      setEmployees(data);
+      // [CHANGE] Use the dedicated axios API function
+      const response = await getHREmployees(); 
+      setEmployees(response.data || []);
     } catch (err) {
-      setError('Error fetching employee list.');
+      setError(err.response?.data?.message || 'Error fetching employee list.');
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -60,16 +61,19 @@ const HREmployeeManagementPage = () => {
     setError(null);
     setSingleEmployee(null); 
     try {
-      const response = await fetch(`${API_BASE_URL}/${employeeIdInput}`);
-      if (response.status === 404) {
-        throw new Error('Employee not found.');
-      }
-      if (!response.ok) throw new Error('Failed to fetch employee.');
-      const data = await response.json();
+      // [CHANGE] Use the dedicated axios API function
+      const response = await getHREmployeeProfile(employeeIdInput);
+      const data = response.data;
       setSingleEmployee(data);
-      setUpdateData({ name: data.name, department: data.department });
+      // [CHANGE] Map response data to update form state
+      setUpdateData({ 
+        firstName: data.firstName, 
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+      });
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || 'Employee not found or failed to fetch profile.');
       setSingleEmployee(null);
     } finally {
       setLoading(false);
@@ -84,8 +88,11 @@ const HREmployeeManagementPage = () => {
     setError(null);
 
     const allowedUpdates = {};
-    if (updateData.name.trim() !== singleEmployee.name) allowedUpdates.name = updateData.name;
-    if (updateData.department.trim() !== singleEmployee.department) allowedUpdates.department = updateData.department;
+    // [CHANGE] Check and set updates for firstName, lastName, email, role
+    if (updateData.firstName.trim() !== singleEmployee.firstName) allowedUpdates.firstName = updateData.firstName;
+    if (updateData.lastName.trim() !== singleEmployee.lastName) allowedUpdates.lastName = updateData.lastName;
+    if (updateData.email.trim() !== singleEmployee.email) allowedUpdates.email = updateData.email;
+    if (updateData.role.trim() !== singleEmployee.role) allowedUpdates.role = updateData.role;
 
     if (Object.keys(allowedUpdates).length === 0) {
       setError('No valid changes detected for update.');
@@ -94,21 +101,14 @@ const HREmployeeManagementPage = () => {
     }
 
     try {
-      // NOTE: In a real app, use axios for easier integration with baseURL/auth headers.
-      const response = await fetch(`${API_BASE_URL}/${singleEmployee._id}`, { 
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(allowedUpdates),
-      });
+      // [CHANGE] Use the dedicated axios API function
+      const response = await updateHREmployeeProfile(singleEmployee._id, allowedUpdates);
 
-      if (response.status === 404) throw new Error('Employee not found during update.');
-      if (!response.ok) throw new Error('Update failed.');
-
-      const result = await response.json();
-      setSingleEmployee(result.employee);
-      alert(result.message); 
+      setSingleEmployee(response.data.employee);
+      alert(response.data.message); 
+      if (employees.length > 0) fetchAllEmployees();
     } catch (err) {
-      setError(err.message || 'Error updating employee profile.');
+      setError(err.response?.data?.message || 'Error updating employee profile.');
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,6 @@ const HREmployeeManagementPage = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-6">Employee Directory & Management</h1>
           <p className="text-gray-500 mb-8">View and manage all employee profiles and records.</p>
           
-          {/* Main Content: Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* --- Section 1: View All Employees (GET /employees) --- */}
@@ -144,7 +143,7 @@ const HREmployeeManagementPage = () => {
               <div className="mt-4 border-t pt-4">
                 <ul className="list-none p-0 space-y-1 max-h-96 overflow-y-auto">
                   {employees.map((emp) => (
-                    <EmployeeListItem key={emp._id} employee={emp} />
+                    <EmployeeListItem key={emp._id} employee={emp} /> 
                   ))}
                   {employees.length === 0 && !loading && (
                     <p className="text-center text-gray-500 italic p-4">No employees loaded.</p>
@@ -180,9 +179,10 @@ const HREmployeeManagementPage = () => {
               {singleEmployee && (
                 <div className="mt-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
                   <h3 className="text-lg font-bold text-blue-800 mb-3">Profile Details</h3>
-                  <p className="text-sm">ID: <code className="text-gray-600 bg-gray-100 p-1 rounded">{singleEmployee._id}</code></p>
-                  <p className="font-semibold text-gray-800">Name: {singleEmployee.name}</p>
-                  <p className="text-gray-600">Department: {singleEmployee.department}</p>
+                  <p className="text-sm">ID: <code className="text-gray-600 bg-gray-100 p-1 rounded">{singleEmployee.loginId}</code></p>
+                  <p className="font-semibold text-gray-800">Name: {singleEmployee.firstName} {singleEmployee.lastName}</p>
+                  <p className="text-gray-600">Email: {singleEmployee.email}</p>
+                  <p className="text-gray-600">Role: {singleEmployee.role}</p>
                   
                   {/* --- Update Form (PATCH /employees/:id) --- */}
                   <div className="mt-6 pt-4 border-t border-blue-200">
@@ -191,24 +191,51 @@ const HREmployeeManagementPage = () => {
                         <FiSave /> Update Employee Info
                       </h4>
                       
+                      {/* [CHANGE] Use firstName */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-medium mb-1">Name:</label>
+                        <label className="text-sm font-medium mb-1">First Name:</label>
                         <input
                           type="text"
-                          value={updateData.name}
-                          onChange={(e) => setUpdateData({ ...updateData, name: e.target.value })}
+                          value={updateData.firstName}
+                          onChange={(e) => setUpdateData({ ...updateData, firstName: e.target.value })}
                           className="p-2 border border-gray-300 rounded-lg"
                         />
                       </div>
                       
+                      {/* [CHANGE] Use lastName */}
                       <div className="flex flex-col">
-                        <label className="text-sm font-medium mb-1">Department:</label>
+                        <label className="text-sm font-medium mb-1">Last Name:</label>
                         <input
                           type="text"
-                          value={updateData.department}
-                          onChange={(e) => setUpdateData({ ...updateData, department: e.target.value })}
+                          value={updateData.lastName}
+                          onChange={(e) => setUpdateData({ ...updateData, lastName: e.target.value })}
                           className="p-2 border border-gray-300 rounded-lg"
                         />
+                      </div>
+
+                      {/* [CHANGE] Use email */}
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-1">Email:</label>
+                        <input
+                          type="email"
+                          value={updateData.email}
+                          onChange={(e) => setUpdateData({ ...updateData, email: e.target.value })}
+                          className="p-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      
+                      {/* [CHANGE] Use role */}
+                      <div className="flex flex-col">
+                        <label className="text-sm font-medium mb-1">Role:</label>
+                        <select
+                          value={updateData.role}
+                          onChange={(e) => setUpdateData({ ...updateData, role: e.target.value })}
+                          className="p-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="HR">HR</option>
+                          <option value="Payroll">Payroll</option>
+                          <option value="Employee">Employee</option>
+                        </select>
                       </div>
                       
                       <button 
@@ -230,5 +257,4 @@ const HREmployeeManagementPage = () => {
   );
 };
 
-// Export the renamed component
 export default HREmployeeManagementPage;
