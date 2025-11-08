@@ -26,18 +26,6 @@ const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) =>
   };
 
   return (
-<<<<<<< HEAD
-    <div 
-      className={`bg-white rounded-xl shadow-md p-6 border border-gray-200 flex flex-col justify-between h-full 
-                  transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.02] cursor-pointer`}
-      onClick={handleClick} // Use the correct click handler
-    >
-      <div className="flex items-start justify-between">
-        <p className="text-sm text-gray-500 font-medium mb-4">{title}</p>
-        {/* We apply the colorClass directly, assuming it's like 'text-blue-600' */}
-        <div className={`p-3 rounded-full ${colorClass.replace('text-', 'bg-')}/10 ${colorClass}`}>
-          <Icon className="text-xl" />
-=======
     <div
       className={`bg-white rounded-lg shadow-md p-5 border border-gray-200 flex flex-col justify-between h-full 
                  transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 cursor-pointer`}
@@ -47,20 +35,10 @@ const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) =>
         <p className="text-sm text-gray-500 font-medium mb-4">{title}</p>
         <div className={`p-3 rounded-full bg-gray-100 ${colorClass}`}>
           <Icon className="text-lg" />
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
         </div>
       </div>
 
       <div className="mt-auto">
-<<<<<<< HEAD
-          <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
-          {trend !== undefined && (
-            <p className={`text-sm flex items-center ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {trend >= 0 ? <FiArrowUpRight className="w-4 h-4 mr-1" /> : <FiArrowDownRight className="w-4 h-4 mr-1" />}
-              {Math.abs(trend)}% trend
-            </p>
-          )}
-=======
         <p className="text-3xl font-bold text-gray-800 mb-1">{value}</p>
         {trend !== undefined && (
           <p
@@ -76,7 +54,6 @@ const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) =>
             {Math.abs(trend)}% trend
           </p>
         )}
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
       </div>
     </div>
   );
@@ -86,19 +63,10 @@ const HRDashboard = () => {
   const navigate = useNavigate();
   const [userRole] = useState('HR');
 
-<<<<<<< HEAD
-  // --- Mock Data (To be replaced by /api/analytics and /api/hr calls) ---
-  // Updated colorClass to use standard Tailwind colors
-  const stats = [
-    { title: "Total Employees", value: "128", icon: FiUsers, colorClass: 'text-blue-600', trend: 3, link: '/hr/employees' },
-    { title: "Pending Leave Requests", value: "5", icon: FiCalendar, colorClass: 'text-yellow-500', trend: 2, link: '/hr/leaves' },
-    { title: "Attendance Rate Today", value: "92.5%", icon: FiClock, colorClass: 'text-green-600', trend: 0, link: '/hr/attendance' },
-=======
   const stats = [
     { title: "Total Employees", value: "128", icon: FiUsers, colorClass: 'text-blue-500', trend: 3, link: '/hr/employees' },
     { title: "Pending Leave Requests", value: "5", icon: FiCalendar, colorClass: 'text-yellow-500', trend: 2, link: '/hr/leaves' },
     { title: "Attendance Rate Today", value: "92.5%", icon: FiClock, colorClass: 'text-green-500', trend: 0, link: '/hr/attendance' },
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
     { title: "New Hires (Month)", value: "4", icon: FiUser, colorClass: 'text-sky-500', trend: 15, link: '/hr/employees' },
   ];
 
@@ -114,13 +82,7 @@ const HRDashboard = () => {
   };
 
   return (
-<<<<<<< HEAD
-    // Replaced bg-background and sm:bg-accent with standard classes
-    <div className="flex min-h-screen bg-white sm:bg-gray-50">
-      {/* 1. Sidebar */}
-=======
     <div className="flex min-h-screen bg-gray-50">
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
       <Sidebar role={userRole} onLogout={handleLogout} />
 
       <div className="flex-1 flex flex-col">
@@ -130,11 +92,7 @@ const HRDashboard = () => {
           <div className="space-y-10">
             {/* Title */}
             <div>
-<<<<<<< HEAD
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">HR Operations Dashboard</h1>
-=======
               <h1 className="text-3xl font-bold text-gray-800">HR Operations Dashboard</h1>
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
               <p className="text-gray-500 mt-1">Quick access to employee and request management.</p>
             </div>
 
@@ -147,123 +105,6 @@ const HRDashboard = () => {
 
             {/* Leave Requests & Quick Links */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-<<<<<<< HEAD
-                
-                {/* Pending Leave Requests (2/3 width) */}
-                <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold text-gray-900">Recent Leave Requests ({recentRequests.filter(r => r.status === 'Pending').length} Pending)</h3>
-                        <NavLink 
-                            to="/hr/leaves"
-                            className="text-sm text-blue-600 font-medium flex items-center hover:underline"
-                        >
-                            View All <FiChevronRight className="w-4 h-4 ml-1" />
-                        </NavLink>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-gray-200 text-left text-sm font-medium text-gray-500">
-                                    <th className="py-2 px-3">Employee</th>
-                                    <th className="py-2 px-3">Type</th>
-                                    <th className="py-2 px-3">Duration</th>
-                                    <th className="py-2 px-3">Status</th>
-                                    <th className="py-2 px-3 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentRequests.map((request) => (
-                                    <tr key={request.id} className="border-b border-gray-200/50 hover:bg-gray-50 transition-all">
-                                        <td className="py-3 px-3 font-medium text-gray-900">{request.name}</td>
-                                        <td className="py-3 px-3 text-gray-500">{request.type}</td>
-                                        <td className="py-3 px-3 text-gray-500">{request.duration}</td>
-                                        <td className="py-3 px-3">
-                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                request.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                                            }`}>
-                                                {request.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-right">
-                                            {request.status === 'Pending' ? (
-                                                <div className="flex justify-end gap-2">
-                                                    <button className="text-green-600 hover:text-green-500 text-sm font-medium p-1 transition-all">Approve</button>
-                                                    <button className="text-red-600 hover:text-red-500 text-sm font-medium p-1 transition-all">Reject</button>
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-500">-</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                {/* Management Links (1/3 width) */}
-                <div className="lg:col-span-1 space-y-4">
-                    <h3 className="text-xl font-semibold text-gray-900">Management Quick Links</h3>
-                    <NavLink 
-                        to="/hr/employees"
-                        className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm flex items-center gap-4 transition-all hover:bg-gray-50/50 hover:shadow-md"
-                    >
-                        <div className="w-10 h-10 flex items-center justify-center rounded-full text-blue-600 bg-blue-100/10">
-                            <FiUsers className="text-xl" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-gray-900">Employee Directory</p>
-                            <p className="text-xs text-gray-500">View and update employee profiles.</p>
-                        </div>
-                        <FiChevronRight className="ml-auto text-gray-400" />
-                    </NavLink>
-                    <NavLink 
-                        to="/hr/attendance"
-                        className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm flex items-center gap-4 transition-all hover:bg-gray-50/50 hover:shadow-md"
-                    >
-                        <div className="w-10 h-10 flex items-center justify-center rounded-full text-sky-600 bg-sky-100/10">
-                            <FiClock className="text-xl" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-gray-900">Attendance Records</p>
-                            <p className="text-xs text-gray-500">Audit and correct clock-in/out times.</p>
-                        </div>
-                        <FiChevronRight className="ml-auto text-gray-400" />
-                    </NavLink>
-                    <NavLink 
-                        to="/hr/reports"
-                        className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm flex items-center gap-4 transition-all hover:bg-gray-50/50 hover:shadow-md"
-                    >
-                        <div className="w-10 h-10 flex items-center justify-center rounded-full text-green-600 bg-green-100/10">
-                            <FiFileText className="text-xl" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-gray-900">View HR Reports</p>
-                            <p className="text-xs text-gray-500">Access leave and attendance analytics.</p>
-                        </div>
-                        <FiChevronRight className="ml-auto text-gray-400" />
-                    </NavLink>
-                </div>
-            </div>
-            
-             {/* Simple Attendance Trends Chart (Placeholder) */}
-             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900">Weekly Attendance Trend</h3>
-                    <span className="text-sm text-gray-500">Last 7 Working Days</span>
-                </div>
-                <div className="h-40 bg-gray-50/50 rounded-lg p-4 flex items-end justify-between space-x-4">
-                    {[90, 92, 88, 95, 93, 91, 94].map((rate, i) => (
-                        <div key={i} className="flex flex-col items-center w-1/7 h-full justify-end">
-                            <div 
-                                className="w-full rounded-t-lg bg-blue-500/70 transition-all" 
-                                style={{ height: `${rate}%`, minHeight: '10px' }} 
-                            />
-                            <p className="text-xs font-medium text-gray-900 mt-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Mon', 'Tue'][i]}</p>
-                        </div>
-                    ))}
-=======
               {/* Leave Requests */}
               <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6 border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
@@ -327,7 +168,6 @@ const HRDashboard = () => {
                       ))}
                     </tbody>
                   </table>
->>>>>>> b5f089ee0c9af9764fe4d9006f2f3ef7fc7fe2c7
                 </div>
               </div>
 
