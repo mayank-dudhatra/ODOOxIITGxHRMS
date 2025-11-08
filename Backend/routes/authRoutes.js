@@ -6,8 +6,8 @@ import { roleMiddleware } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 // Admin / HR create user
-router.post("/create", authMiddleware, roleMiddleware("Admin", "HR"), createUser);
-
+// router.post("/create", authMiddleware, roleMiddleware("Admin", "HR"), createUser);
+router.post("/create", /* authMiddleware, roleMiddleware("Admin", "HR"), */ createUser);
 // Login
 router.post("/login", login);
 

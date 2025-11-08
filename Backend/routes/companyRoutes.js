@@ -1,22 +1,34 @@
 import express from 'express';
+import Company from '../models/Company.js'; // 1. IMPORT MODEL
+import { hashPassword } from '../utils/passwordUtils.js'; // 2. IMPORT HASHER
 const router = express.Router();
 
-// --- ADDED REGISTER ROUTE ---
 // @route   POST /api/company/register
 // @desc    Register a new company
 router.post('/register', async (req, res) => {
   try {
     const { name, companyCode, email, password } = req.body;
 
-    // TODO:
-    // 1. Check if company (email or companyCode) already exists in your database
-    // 2. Hash the password using bcryptjs
-    // 3. Create a new Company document and save it to the database
+    // 1. Check if company exists
+    let company = await Company.findOne({ $or: [{ email }, { companyCode }] });
+    if (company) {
+      return res.status(400).json({ message: 'Company with this email or code already exists' });
+    }
 
-    console.log('Registering company with:', req.body);
+    // 2. Hash the password
+    const passwordHash = await hashPassword(password);
 
-    // Send a success response
-    res.status(201).json({ message: 'Company registered successfully!' });
+    // 3. Create and save new company
+    company = new Company({
+      name,
+      companyCode,
+      email,
+      passwordHash,
+    });
+    await company.save();
+
+    // Send a success response with the new ID
+    res.status(201).json({ message: 'Company registered successfully!', companyId: company._id });
 
   } catch (error) {
     console.error('Error during company registration:', error);
@@ -42,7 +54,6 @@ router.post('/login', async (req, res) => {
     console.log('Logging in company with:', req.body);
 
     // Send a placeholder success response
-    // This matches what AuthContext expects: login(response.data);
     res.status(200).json({
       message: 'Login successful!',
       // token: "your_jwt_token_here",
