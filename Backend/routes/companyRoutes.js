@@ -1,7 +1,18 @@
 import express from 'express';
 import Company from '../models/Company.js'; // 1. IMPORT MODEL
-import { hashPassword } from '../utils/passwordUtils.js'; // 2. IMPORT HASHER
+import { hashPassword, comparePassword } from '../utils/passwordUtils.js'; // 2. IMPORT UTILS
+import jwt from 'jsonwebtoken'; // 3. IMPORT JWT
+
 const router = express.Router();
+
+// --- NEW TOKEN FUNCTION ---
+// (Moved from authController for use here)
+const generateToken = (company) =>
+  jwt.sign({ id: company._id, role: 'CompanyAdmin' }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
+// --- END NEW FUNCTION ---
+
 
 // @route   POST /api/company/register
 // @desc    Register a new company
@@ -36,28 +47,33 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// --- ADDED LOGIN ROUTE ---
+// --- UPDATED LOGIN ROUTE ---
 // @route   POST /api/company/login
 // @desc    Login for company admin
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // TODO:
-    // 1. Find the company by email in your database
-    // 2. If company doesn't exist, return 400
-    // 3. Compare the provided password with the hashed password using bcryptjs
-    // 4. If passwords don't match, return 400
-    // 5. Create a JWT token
-    // 6. Send back the token and company data (as shown in your AuthContext)
+    // 1. Find the company by email
+    const company = await Company.findOne({ email });
+    if (!company) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    console.log('Logging in company with:', req.body);
+    // 2. Compare the provided password
+    const valid = await comparePassword(password, company.passwordHash);
+    if (!valid) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    
+    // 3. Create a JWT token
+    const token = generateToken(company);
 
-    // Send a placeholder success response
+    // 4. Send back the token and company data
     res.status(200).json({
       message: 'Login successful!',
-      // token: "your_jwt_token_here",
-      company: { name: "Test Company", email: email } // Send back company data
+      token: token,
+      company: { id: company._id, name: company.name, email: company.email } 
     });
 
   } catch (error) {
@@ -65,6 +81,7 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Server error during login' });
   }
 });
+// --- END OF UPDATE ---
 
 // Export the router so server.js can use it
 export default router;

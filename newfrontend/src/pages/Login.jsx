@@ -29,11 +29,25 @@ const tabStyles = {
 
 const Login = () => {
   const { login } = useContext(AuthContext);
-  // Replaced boolean 'isCompanyLogin' with a string for selected role
   const [selectedRole, setSelectedRole] = useState("Company");
-  const [credentials, setCredentials] = useState({ email: "", password: "", loginId: "" });
+  
+  // --- UPDATED STATE ---
+  // We separate company and user credentials
+  const [companyCreds, setCompanyCreds] = useState({ email: "", password: "" });
+  const [userCreds, setUserCreds] = useState({ loginId: "", password: "" });
+  // --- END OF UPDATE ---
 
-  const handleChange = (e) => setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  const handleCompanyChange = (e) => setCompanyCreds({ ...companyCreds, [e.target.name]: e.target.value });
+  const handleUserChange = (e) => setUserCreds({ ...userCreds, [e.target.name]: e.target.value });
+
+  // --- NEW FUNCTION ---
+  // Resets state when changing login type
+  const handleTabClick = (role) => {
+    setSelectedRole(role);
+    setCompanyCreds({ email: "", password: "" });
+    setUserCreds({ loginId: "", password: "" });
+  };
+  // --- END OF NEW FUNCTION ---
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -41,11 +55,15 @@ const Login = () => {
       let response;
       // If Company tab is selected, use company login
       if (selectedRole === "Company") {
-        response = await api.post("/company/login", credentials);
+        // --- UPDATED PAYLOAD ---
+        response = await api.post("/company/login", companyCreds);
+        // --- END OF UPDATE ---
       } 
       // For all other roles, use the general user login
       else {
-        response = await api.post("/auth/login", credentials);
+        // --- UPDATED PAYLOAD ---
+        response = await api.post("/auth/login", userCreds);
+        // --- END OF UPDATE ---
       }
       login(response.data);
     } catch (err) {
@@ -69,7 +87,9 @@ const Login = () => {
               ...tabStyles.tab,
               ...(selectedRole === role ? tabStyles.activeTab : {}),
             }}
-            onClick={() => setSelectedRole(role)}
+            // --- UPDATED OnClick ---
+            onClick={() => handleTabClick(role)}
+            // --- END OF UPDATE ---
           >
             {role}
           </div>
@@ -80,14 +100,18 @@ const Login = () => {
         {isCompanyLogin ? (
           <>
             <h3>Company Admin Login</h3>
-            <input type="email" name="email" placeholder="Company Email" onChange={handleChange} required />
-            <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
+            {/* --- UPDATED INPUTS --- */}
+            <input type="email" name="email" placeholder="Company Email" value={companyCreds.email} onChange={handleCompanyChange} required />
+            <input type="password" name="password" placeholder="Password" value={companyCreds.password} onChange={handleCompanyChange} required />
+            {/* --- END OF UPDATE --- */}
           </>
         ) : (
           <>
             <h3>{selectedRole} Login</h3>
-            <input name="loginId" placeholder="Login ID" onChange={handleChange} required />
-            <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
+            {/* --- UPDATED INPUTS --- */}
+            <input name="loginId" placeholder="Login ID" value={userCreds.loginId} onChange={handleUserChange} required />
+            <input type="password" name="password" placeholder="Password" value={userCreds.password} onChange={handleUserChange} required />
+            {/* --- END OF UPDATE --- */}
           </>
         )}
         <button type="submit">Login</button>

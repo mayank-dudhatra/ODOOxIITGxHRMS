@@ -16,6 +16,15 @@ import Sidebar from '../hr/Sidebar';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; 
 
 const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) => {
+  // We need the navigate function to handle clicks without a full page reload
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (link) {
+      navigate(link); // Use navigate for single-page-app routing
+    }
+  };
+
   return (
     <div
       className={`bg-white rounded-lg shadow-md p-5 border border-gray-200 flex flex-col justify-between h-full 
