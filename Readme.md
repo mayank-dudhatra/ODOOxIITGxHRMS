@@ -4,6 +4,13 @@
 
 **WorkZen SHRMS** is a comprehensive, full-stack Human Resource Management System engineered to demonstrate robust **Role-Based Access Control (RBAC)**, seamless integration between core HR functions, and complex business logic for payroll processing. Our solution delivers four distinct, segregated user portals, ensuring security, efficiency, and role-specific workflows.
 
+## 🎬 Live Demonstration & Technical Showcase
+
+See WorkZen SHRMS in action, demonstrating the multi-role flow and core functionality.
+
+**Access the Full Video Demo Here:**
+### [WorkZen SHRMS Demo Video Link](https://drive.google.com/file/d/1h4Hav-1RLv3lQTIxX55U5aV-eCHysn1X/view?usp=sharing)
+
 ## ✨ Why WorkZen SHRMS Should Win (Innovations & Technical Merit)
 
 ### 1. Advanced Role-Based Security Model 🔒
