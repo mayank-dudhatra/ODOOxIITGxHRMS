@@ -62,12 +62,17 @@ const Login = () => {
       // For all other roles, use the general user login
       else {
         // --- UPDATED PAYLOAD ---
+        // Ensure loginId is actually populated here
+        if (!userCreds.loginId || !userCreds.password) {
+          throw new Error("Login ID and Password are required.");
+        }
         response = await api.post("/auth/login", userCreds);
         // --- END OF UPDATE ---
       }
       login(response.data);
     } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+      // FIX: Improved error handling to show custom message if available
+      alert(err.response?.data?.message || err.message || "Login failed");
     }
   };
 
@@ -108,10 +113,10 @@ const Login = () => {
         ) : (
           <>
             <h3>{selectedRole} Login</h3>
-            {/* --- UPDATED INPUTS --- */}
+            {/* --- FIX: ADDED NAME ATTRIBUTE TO LOGIN ID INPUT --- */}
             <input name="loginId" placeholder="Login ID" value={userCreds.loginId} onChange={handleUserChange} required />
             <input type="password" name="password" placeholder="Password" value={userCreds.password} onChange={handleUserChange} required />
-            {/* --- END OF UPDATE --- */}
+            {/* --- END OF FIX --- */}
           </>
         )}
         <button type="submit">Login</button>

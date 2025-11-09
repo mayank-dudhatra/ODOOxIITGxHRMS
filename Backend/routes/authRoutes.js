@@ -6,9 +6,9 @@ import { roleMiddleware } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 // Admin / HR create user
-// router.post("/create", authMiddleware, roleMiddleware("Admin", "HR"), createUser);
+// NOTE: Temporarily disabling authMiddleware for development/testing if user creation is needed without auth context
 router.post("/create", /* authMiddleware, roleMiddleware("Admin", "HR"), */ createUser);
-// Login
+// Login - This is the route for Employee/HR/Payroll login
 router.post("/login", login);
 
 // Change Password
