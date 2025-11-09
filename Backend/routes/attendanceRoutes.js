@@ -1,36 +1,23 @@
 import express from "express";
 import {
   markAttendance,
-  getAttendanceRecords,
-  updateAttendanceRecord,
-  deleteAttendanceRecord,
-} from "../controllers/attendanceController.js"; 
-import { authMiddleware } from "../middleware/authMiddleware.js";
-import { roleMiddleware } from "../middleware/roleMiddleware.js";
+  getEmployeeAttendance,
+  getAttendanceByDate,
+  updateAttendance,
+} from "../controllers/attendanceController.js";
 
 const router = express.Router();
 
-/* ==========================================================
-   ⏰ ATTENDANCE MODULE ROUTES
-   Base URL → /api/attendance
-   ========================================================== */
+// 🔹 Employee or HR marks attendance
+router.post("/mark", markAttendance);
 
-// Middleware for Admin/HR/Payroll access (Adjust roles as needed, assuming Admin/HR/Payroll can manage attendance)
-const protectedAttendance = [authMiddleware, roleMiddleware("CompanyAdmin", "HR", "Payroll")];
+// 🔹 HR gets attendance of a specific employee
+router.get("/employee/:employeeId", getEmployeeAttendance);
 
-// 🔹 POST to manually mark attendance (used by HR/Employee)
-router.post("/mark", markAttendance); 
+// 🔹 HR/Admin view all attendance for a specific date
+router.get("/date/:date", getAttendanceByDate);
 
-// 🔹 GET all records (Admin/HR/Payroll)
-router.get("/", protectedAttendance, getAttendanceRecords);
-
-// 🔹 GET records filtered by ID (HR specific, fetching single employee)
-router.get("/:id", protectedAttendance, getAttendanceRecords);
-
-// 🔹 PATCH to update a record (used by HR/Admin)
-router.patch("/:id", protectedAttendance, updateAttendanceRecord);
-
-// 🔹 DELETE a record (used by HR/Admin)
-router.delete("/:id", protectedAttendance, deleteAttendanceRecord);
+// 🔹 HR/Admin update attendance manually
+router.put("/update/:id", updateAttendance);
 
 export default router;

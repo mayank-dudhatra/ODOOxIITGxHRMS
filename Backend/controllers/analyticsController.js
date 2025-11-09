@@ -5,10 +5,9 @@ import Employee from "../models/Employee.js";
    📊 ANALYTICS CONTROLLER
    ============================================================= */
 
-// 🔹 Get analytics data
-export const getAnalytics = async (req, res) => {
+// 🔹 Get analytics summary (for charts + dashboard)
+export const getAnalyticsSummary = async (req, res) => {
   try {
-    // Get monthly payout trends (last 6 months)
     const monthlyData = await Payroll.aggregate([
       { $match: { status: "Processed" } },
       {
@@ -26,7 +25,7 @@ export const getAnalytics = async (req, res) => {
     ]);
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
+
     const payoutTrends = monthlyData.map((item) => ({
       month: monthNames[item._id.month - 1] || "Unknown",
       payout: item.payout || 0,
@@ -37,14 +36,8 @@ export const getAnalytics = async (req, res) => {
       deductions: item.deductions || 0,
     }));
 
-    // Get department distribution
     const departmentData = await Employee.aggregate([
-      {
-        $group: {
-          _id: "$department",
-          employees: { $sum: 1 },
-        },
-      },
+      { $group: { _id: "$department", employees: { $sum: 1 } } },
       { $match: { _id: { $ne: null } } },
     ]);
 
@@ -53,16 +46,15 @@ export const getAnalytics = async (req, res) => {
       employees: item.employees,
     }));
 
-    // Calculate summary stats
     const totalPayout = payoutTrends.reduce((sum, item) => sum + item.payout, 0);
     const avgPayout = payoutTrends.length > 0 ? Math.round(totalPayout / payoutTrends.length) : 0;
     const totalDeductions = deductionsData.reduce((sum, item) => sum + item.deductions, 0);
     const totalEmployees = departmentDistribution.reduce((sum, item) => sum + item.employees, 0);
 
     res.status(200).json({
-      payoutTrends: payoutTrends.length > 0 ? payoutTrends : [],
-      deductionsData: deductionsData.length > 0 ? deductionsData : [],
-      departmentDistribution: departmentDistribution.length > 0 ? departmentDistribution : [],
+      payoutTrends,
+      deductionsData,
+      departmentDistribution,
       summary: {
         totalPayout,
         avgPayout,
@@ -71,8 +63,7 @@ export const getAnalytics = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("❌ Error in getAnalytics:", err);
+    console.error("❌ Error in getAnalyticsSummary:", err);
     res.status(500).json({ message: "Failed to fetch analytics data" });
   }
 };
-
