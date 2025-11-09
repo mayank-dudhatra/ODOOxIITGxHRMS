@@ -1,41 +1,39 @@
 import axios from "./axiosConfig";
 
-/* ============================================================
-   🧾 PAYROLL MODULE — API HANDLERS
-   Handles all API calls for Payroll Officer Dashboard
-   ============================================================ */
+/* ======================================================
+   📦 PAYROLL API SERVICE
+   Handles all payroll-related API requests
+   ====================================================== */
 
-/* ────────────────────────────────────────────────
-   DASHBOARD SUMMARY & LEAVES
-──────────────────────────────────────────────── */
-export const getPayrollSummary = () => axios.get("/api/payroll/summary");
+// 🧾 Dashboard Summary — total payout, employees paid, etc.
+export const getPayrollSummary = () => axios.get("/payroll/summary");
 
-// Fetch pending leave requests for payroll officer
-export const getPendingLeaves = () => axios.get("/api/leave/pending");
+// 📋 Pending leave requests for payroll officer
+export const getPendingLeaves = () => axios.get("/leave/pending");
 
-/* ────────────────────────────────────────────────
-   PAYROLL PROCESSING
-──────────────────────────────────────────────── */
-export const getPayrollList = () => axios.get("/api/payroll");
+// 💼 Full payroll list (table)
+export const getPayrollList = () => axios.get("/payroll");
 
+// ⚙️ Process payroll for one employee
 export const processPayroll = (employeeId) =>
-  axios.post(`/api/payroll/process/${employeeId}`);
+  axios.post(`/payroll/process/${employeeId}`);
 
+// 📄 Generate payslip (preview)
 export const generatePayslip = (employeeId) =>
-  axios.get(`/api/payslip/${employeeId}`);
+  axios.get(`/payslip/${employeeId}`);
 
-/* ────────────────────────────────────────────────
-   REPORTS PAGE (View + Download)
-──────────────────────────────────────────────── */
-export const getPayrollReports = () => axios.get("/api/payroll/reports");
-
+// 💾 Download Payslip (PDF)
 export const downloadPayslip = (employeeId) =>
-  axios.get(`/api/payslip/download/${employeeId}`, { responseType: "blob" });
+  axios.get(`/payslip/${employeeId}/download`, {
+    responseType: "blob",
+  });
 
-/* ────────────────────────────────────────────────
-   SETTINGS PAGE
-──────────────────────────────────────────────── */
-export const getPayrollSettings = () => axios.get("/api/payroll/settings");
+// 📊 Payroll Reports (used in ReportsPage)
+export const getPayrollReports = () => axios.get("/payroll/reports");
 
-export const updatePayrollSettings = (data) =>
-  axios.put("/api/payroll/settings", data);
+// ⚙️ Payroll Settings (used in SettingsPage)
+export const getPayrollSettings = () => axios.get("/payroll/settings");
+
+// ✏️ Update Payroll Settings (used in SettingsPage)
+export const updatePayrollSettings = (settingsData) =>
+  axios.put("/payroll/settings", settingsData);

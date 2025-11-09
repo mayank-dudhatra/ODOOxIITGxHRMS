@@ -3,10 +3,12 @@ import Employee from "../models/Employee.js";
 import Settings from "../models/Settings.js";
 
 /* =============================================================
-   🧾 PAYROLL CONTROLLER — For Payroll Officer
+   🧾 PAYROLL CONTROLLER — For Payroll Officer / Admin
    ============================================================= */
 
-// 🔹 Get payroll summary (for dashboard cards)
+/* =============================================================
+   🔹 GET Payroll Summary (Dashboard Cards)
+   ============================================================= */
 export const getPayrollSummary = async (req, res) => {
   try {
     const totalPayout = await Payroll.aggregate([
@@ -18,7 +20,7 @@ export const getPayrollSummary = async (req, res) => {
     const payrunsProcessed = await Payroll.countDocuments();
     const pendingApprovals = await Payroll.countDocuments({ status: "Pending" });
 
-    // Get monthly payroll data for chart
+    // Last 6 months chart data
     const monthlyData = await Payroll.aggregate([
       { $match: { status: "Processed" } },
       {
@@ -31,17 +33,14 @@ export const getPayrollSummary = async (req, res) => {
         },
       },
       { $sort: { "_id.year": 1, "_id.month": 1 } },
-      { $limit: 6 }, // Last 6 months
+      { $limit: 6 },
     ]);
 
-    // Format chart data with month names
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const chartData = monthlyData.map((item) => ({
       month: monthNames[item._id.month - 1] || "Unknown",
       payout: item.payout,
     }));
-
-    // Return empty array if no data (frontend will handle empty state)
 
     res.status(200).json({
       totalPayout: totalPayout[0]?.total || 0,
@@ -56,22 +55,26 @@ export const getPayrollSummary = async (req, res) => {
   }
 };
 
-// 🔹 Get full payroll list (for PayrollTable.jsx)
+/* =============================================================
+   🔹 GET All Payroll Records (Table View)
+   ============================================================= */
 export const getPayrollList = async (req, res) => {
   try {
     const payrolls = await Payroll.find()
-      .populate("employeeId", "name attendanceDays approvedLeaves")
+      .populate("employeeId", "firstName lastName department designation grossSalary")
       .sort({ createdAt: -1 });
 
     const formatted = payrolls.map((p) => ({
       _id: p._id.toString(),
-      employeeId: p.employeeId?._id?.toString() || p.employeeId?.toString() || "",
-      employeeName: p.employeeId?.name || "Unknown",
-      attendanceDays: p.employeeId?.attendanceDays || 0,
-      approvedLeaves: p.employeeId?.approvedLeaves || 0,
-      grossSalary: p.grossSalary,
-      deductions: p.deductions,
-      netPay: p.netPay,
+      employeeId: p.employeeId?._id?.toString() || "",
+      employeeName: p.employeeId
+        ? `${p.employeeId.firstName} ${p.employeeId.lastName}`
+        : "Unknown",
+      department: p.employeeId?.department || "N/A",
+      designation: p.employeeId?.designation || "N/A",
+      grossSalary: p.grossSalary || p.employeeId?.grossSalary || 0,
+      deductions: p.deductions || 0,
+      netPay: p.netPay || 0,
       status: p.status || "Pending",
     }));
 
@@ -82,7 +85,9 @@ export const getPayrollList = async (req, res) => {
   }
 };
 
-// 🔹 Process payroll for one employee
+/* =============================================================
+   🔹 PROCESS Payroll for a Single Employee
+   ============================================================= */
 export const processPayroll = async (req, res) => {
   try {
     const { id } = req.params; // employeeId
@@ -99,14 +104,12 @@ export const processPayroll = async (req, res) => {
     const deductions = (employee.grossSalary * (pf + tax)) / 100;
     const netPay = employee.grossSalary - deductions;
 
-    // Create or update payroll record
     const payroll = await Payroll.findOneAndUpdate(
       { employeeId: id },
       {
         employeeId: employee._id,
-        employeeName: employee.name,
-        attendanceDays: employee.attendanceDays || 0,
-        approvedLeaves: employee.approvedLeaves || 0,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        department: employee.department,
         grossSalary: employee.grossSalary,
         deductions,
         netPay,
@@ -115,13 +118,13 @@ export const processPayroll = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    // Update employee netPay field (optional)
+    // Optionally update employee record
     employee.netPay = netPay;
     employee.deductions = deductions;
     await employee.save();
 
     res.status(200).json({
-      message: "Payroll processed successfully!",
+      message: "✅ Payroll processed successfully!",
       payroll,
     });
   } catch (err) {
@@ -130,26 +133,31 @@ export const processPayroll = async (req, res) => {
   }
 };
 
-// 🔹 Get payroll reports (for Reports page)
+/* =============================================================
+   🔹 GET Payroll Reports (For ReportsPage)
+   ============================================================= */
 export const getPayrollReports = async (req, res) => {
   try {
     const reports = await Payroll.find()
-      .populate("employeeId", "name")
+      .populate("employeeId", "firstName lastName")
       .sort({ createdAt: -1 });
 
-    // Format month from createdAt
-    const monthNames = ["January", "February", "March", "April", "May", "June", 
-                        "July", "August", "September", "October", "November", "December"];
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
 
     const formatted = reports.map((r) => {
       const date = new Date(r.createdAt);
-      const month = monthNames[date.getMonth()] || "Unknown";
+      const month = monthNames[date.getMonth()];
       const year = date.getFullYear();
-      
+
       return {
         id: r._id.toString(),
-        employeeId: r.employeeId?._id?.toString() || r.employeeId?.toString() || "",
-        employeeName: r.employeeId?.name || "N/A",
+        employeeId: r.employeeId?._id?.toString() || "",
+        employeeName: r.employeeId
+          ? `${r.employeeId.firstName} ${r.employeeId.lastName}`
+          : "N/A",
         month: `${month} ${year}`,
         grossSalary: r.grossSalary,
         netPay: r.netPay,
@@ -165,32 +173,51 @@ export const getPayrollReports = async (req, res) => {
   }
 };
 
-// 🔹 Get payroll settings (PF, tax %, etc.)
+/* =============================================================
+   🔹 GET Payroll Settings (PF, Tax %, etc.)
+   ============================================================= */
 export const getPayrollSettings = async (req, res) => {
   try {
     const settings = await Settings.findOne();
-    if (!settings)
-      return res.status(404).json({ message: "No payroll settings found" });
+
+    if (!settings) {
+      // Return sensible defaults if not found
+      return res.status(200).json({
+        pfPercentage: 12,
+        taxPercentage: 10,
+        basicToGrossRatio: 40,
+        hraPercentage: 20,
+        otherDeductions: 0,
+        bonusPercentage: 0,
+        payCycle: "Monthly",
+        payDate: "25",
+        updatedBy: "System Default",
+      });
+    }
+
     res.status(200).json(settings);
   } catch (err) {
     console.error("❌ Error in getPayrollSettings:", err);
-    res.status(500).json({ message: "Failed to fetch settings" });
+    res.status(500).json({ message: "Failed to fetch payroll settings" });
   }
 };
 
-// 🔹 Update payroll settings
+/* =============================================================
+   🔹 UPDATE Payroll Settings
+   ============================================================= */
 export const updatePayrollSettings = async (req, res) => {
   try {
     const updated = await Settings.findOneAndUpdate({}, req.body, {
       new: true,
       upsert: true,
     });
+
     res.status(200).json({
-      message: "Settings updated successfully!",
-      updated,
+      message: "✅ Payroll settings updated successfully!",
+      data: updated,
     });
   } catch (err) {
     console.error("❌ Error in updatePayrollSettings:", err);
-    res.status(500).json({ message: "Failed to update settings" });
+    res.status(500).json({ message: "Failed to update payroll settings" });
   }
 };

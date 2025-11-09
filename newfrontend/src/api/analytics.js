@@ -1,8 +1,10 @@
 import axios from "./axiosConfig";
 
-/* ============================================================
-   📊 ANALYTICS MODULE — API HANDLERS
-   ============================================================ */
+// 📊 Get overall analytics summary
+export const getAnalytics = () => axios.get("/analytics");
 
-export const getAnalytics = () => axios.get("/api/analytics");
+// 📈 Get department or payroll analytics
+export const getPayrollAnalytics = () => axios.get("/analytics/payroll");
 
+// 🧠 Get HR or attendance analytics
+export const getHRAnalytics = () => axios.get("/analytics/hr");

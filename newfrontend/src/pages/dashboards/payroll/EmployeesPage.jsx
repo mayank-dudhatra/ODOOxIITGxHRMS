@@ -25,15 +25,29 @@ export default function EmployeesPage() {
     async function fetchEmployees() {
       try {
         const res = await getEmployees();
-        setEmployees(res.data || []);
+        console.log("✅ Employee API Response:", res.data);
+
+        const formatted = (res.data || []).map((emp, index) => ({
+          id: emp.id || emp._id || index + 1,
+          name: emp.name || `${emp.firstName || ""} ${emp.lastName || ""}`.trim(),
+          department: emp.department || "—",
+          designation: emp.designation || "—",
+          salary: emp.salary || emp.grossSalary || 0,
+          attendancePercentage: emp.attendancePercentage || 0,
+          status: emp.status || (emp.isActive ? "Active" : "Inactive"),
+        }));
+
+        setEmployees(formatted);
       } catch (error) {
-        console.error("Error fetching employees:", error);
+        console.error("❌ Error fetching employees:", error);
       } finally {
         setLoading(false);
       }
     }
     fetchEmployees();
   }, []);
+
+
 
   const handleRowClick = (params) => {
     setSelectedEmployee(params.row);
@@ -69,43 +83,44 @@ export default function EmployeesPage() {
             <CircularProgress />
           </Box>
         ) : (
-          <DataGrid
-            rows={employees}
-          columns={[
-            { field: "id", headerName: "ID", width: 70 },
-            { field: "name", headerName: "Name", flex: 1 },
-            { field: "department", headerName: "Department", width: 150 },
-            { field: "designation", headerName: "Designation", flex: 1 },
-            {
-              field: "salary",
-              headerName: "Salary (₹)",
-              width: 140,
-              valueFormatter: (params) =>
-                params.value ? params.value.toLocaleString("en-IN") : "—",
-            },
-            {
-              field: "attendance",
-              headerName: "Attendance",
-              width: 130,
-              valueGetter: (params) => `${params.row.attendancePercentage || 0}%`,
-            },
-            {
-              field: "status",
-              headerName: "Status",
-              width: 120,
-              renderCell: (params) => (
-                <Chip
-                  label={params.value}
-                  color={params.value === "Active" ? "success" : "default"}
-                  size="small"
-                />
-              ),
-            },
-          ]}
-          pageSizeOptions={[5]}
-            disableRowSelectionOnClick
-            onRowClick={handleRowClick}
-          />
+            <DataGrid
+              rows={employees}
+              getRowId={(row) => row.id}
+              columns={[
+                { field: "id", headerName: "ID", width: 70 },
+                { field: "name", headerName: "Name", flex: 1 },
+                { field: "department", headerName: "Department", width: 150 },
+                { field: "designation", headerName: "Designation", flex: 1 },
+                {
+                  field: "salary",
+                  headerName: "Salary (₹)",
+                  width: 140,
+                  valueFormatter: (params) =>
+                    Number(params.value)?.toLocaleString("en-IN") || "—",
+                },
+                {
+                  field: "attendancePercentage",
+                  headerName: "Attendance (%)",
+                  width: 130,
+                  renderCell: (params) => `${params.value || 0}%`,
+                },
+                {
+                  field: "status",
+                  headerName: "Status",
+                  width: 120,
+                  renderCell: (params) => (
+                    <Chip
+                      label={params.value}
+                      color={params.value === "Active" ? "success" : "default"}
+                      size="small"
+                    />
+                  ),
+                },
+              ]}
+              pageSizeOptions={[5, 10, 20]}
+              disableRowSelectionOnClick
+              onRowClick={handleRowClick}
+            />
         )}
       </Paper>
 

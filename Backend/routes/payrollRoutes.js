@@ -10,24 +10,19 @@ import {
 
 const router = express.Router();
 
-/* ==========================================================
-   💼 PAYROLL MODULE ROUTES
-   Base URL → /api/payroll
-   ========================================================== */
-
-// 🔹 Dashboard Summary (cards data)
+// 🔹 Dashboard summary
 router.get("/summary", getPayrollSummary);
 
-// 🔹 Payroll Table Data
+// 🔹 Payroll table
 router.get("/", getPayrollList);
 
-// 🔹 Process Payroll for One Employee
-router.post("/process/:id", processPayroll); // ✅ use ":id" (matches controller)
+// 🔹 Process payroll for one employee
+router.post("/process/:id", processPayroll);
 
-// 🔹 Payroll Reports
+// 🔹 Reports
 router.get("/reports", getPayrollReports);
 
-// 🔹 Payroll Settings (PF %, Tax %, etc.)
+// 🔹 Settings (✅ Required for /api/payroll/settings)
 router.get("/settings", getPayrollSettings);
 router.put("/settings", updatePayrollSettings);
 

@@ -102,12 +102,25 @@ export const addEmployee = async (req, res) => {
 };
 
 // 🟡 Get all Employees (No change needed)
-export const getEmployees = async (req, res) => {
+export const getAllEmployees = async (req, res) => {
   try {
     const employees = await Employee.find().sort({ createdAt: -1 });
-    res.json({ success: true, employees });
+
+    // ✅ Format for DataGrid
+    const formatted = employees.map((e) => ({
+      id: e._id.toString(), // DataGrid key
+      name: e.firstName && e.lastName ? `${e.firstName} ${e.lastName}` : e.firstName || "N/A",
+      department: e.department || "—",
+      designation: e.designation || "—",
+      salary: e.grossSalary || 0,
+      attendancePercentage: e.attendancePercentage || 0,
+      status: e.status || "Active",
+    }));
+
+    res.status(200).json(formatted);
   } catch (error) {
     console.error("❌ Error fetching employees:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ message: "Error fetching employees" });
   }
 };
+

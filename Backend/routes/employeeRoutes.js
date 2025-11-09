@@ -1,12 +1,12 @@
 import express from "express";
-import { addEmployee, getEmployees } from "../controllers/employeeController.js";
+import { addEmployee, getAllEmployees } from "../controllers/employeeController.js";
 
 const router = express.Router();
 
-// POST → Add Employee
+// Add new employee
 router.post("/", addEmployee);
 
-// GET → Fetch all Employees
-router.get("/", getEmployees);
+// Get all employees
+router.get("/", getAllEmployees);
 
 export default router;
