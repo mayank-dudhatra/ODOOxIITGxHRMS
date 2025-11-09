@@ -20,10 +20,9 @@ import { getHREmployees, getHRLeaveRequests, approveHRLeave, rejectHRLeave } fro
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; 
 
-<<<<<<< HEAD
+
 // DashboardCard component remains the same
-const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link }) => {
-=======
+
 // FIX: DashboardCard now receives 'navigate' as a prop and avoids calling useNavigate() internally.
 const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link, navigate }) => {
   // Removed internal useNavigate hook call
@@ -379,4 +378,4 @@ const HRDashboard = () => {
   );
 };
 
-export default HRDashboard;
+export default HRDashboard
