@@ -4,23 +4,18 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
-// [CHANGE] Import API functions from new hr.js
-import { getHREmployees, getHREmployeeProfile, updateHREmployeeProfile } from '../../../api/hr'; 
+import { getHREmployees, getHREmployeeProfile, updateHREmployeeProfile } from './hr'; 
 import { FiUsers, FiSearch, FiSave } from 'react-icons/fi'; 
 
-// Mock Base URL is no longer strictly needed but kept for context
-const API_BASE_URL = '/hr/employees'; 
 
 // --- Component 1: Employee List Item ---
 const EmployeeListItem = ({ employee }) => (
   <li className="p-3 border-b border-gray-100 hover:bg-gray-50 transition-colors flex justify-between items-center">
     <div>
-      {/* [CHANGE] Use firstName and lastName */}
       <p className="font-semibold text-gray-800">{employee.firstName} {employee.lastName}</p>
-      {/* [CHANGE] Use email and role from the User model */}
       <p className="text-sm text-gray-500">{employee.email} ({employee.role})</p>
     </div>
-    <small className="text-xs text-gray-400">ID: {employee._id}</small>
+    <small className="text-xs text-gray-400">ID: {employee.loginId}</small>
   </li>
 );
 
@@ -29,7 +24,6 @@ const HREmployeeManagementPage = () => {
   const [employees, setEmployees] = useState([]);
   const [singleEmployee, setSingleEmployee] = useState(null);
   const [employeeIdInput, setEmployeeIdInput] = useState('');
-  // [CHANGE] Fields to manage for update
   const [updateData, setUpdateData] = useState({ firstName: '', lastName: '', email: '', role: '' }); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -42,12 +36,12 @@ const HREmployeeManagementPage = () => {
   const fetchAllEmployees = async () => {
     setLoading(true);
     setError(null);
+    setSingleEmployee(null); 
     try {
-      // [CHANGE] Use the dedicated axios API function
       const response = await getHREmployees(); 
       setEmployees(response.data || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error fetching employee list.');
+      setError(err.message || 'Error fetching employee list from mock API.');
       setEmployees([]);
     } finally {
       setLoading(false);
@@ -61,11 +55,9 @@ const HREmployeeManagementPage = () => {
     setError(null);
     setSingleEmployee(null); 
     try {
-      // [CHANGE] Use the dedicated axios API function
       const response = await getHREmployeeProfile(employeeIdInput);
       const data = response.data;
       setSingleEmployee(data);
-      // [CHANGE] Map response data to update form state
       setUpdateData({ 
         firstName: data.firstName, 
         lastName: data.lastName,
@@ -73,7 +65,7 @@ const HREmployeeManagementPage = () => {
         role: data.role,
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Employee not found or failed to fetch profile.');
+      setError(err.message || `Employee "${employeeIdInput}" not found or failed to fetch profile from mock API.`);
       setSingleEmployee(null);
     } finally {
       setLoading(false);
@@ -88,7 +80,6 @@ const HREmployeeManagementPage = () => {
     setError(null);
 
     const allowedUpdates = {};
-    // [CHANGE] Check and set updates for firstName, lastName, email, role
     if (updateData.firstName.trim() !== singleEmployee.firstName) allowedUpdates.firstName = updateData.firstName;
     if (updateData.lastName.trim() !== singleEmployee.lastName) allowedUpdates.lastName = updateData.lastName;
     if (updateData.email.trim() !== singleEmployee.email) allowedUpdates.email = updateData.email;
@@ -101,14 +92,13 @@ const HREmployeeManagementPage = () => {
     }
 
     try {
-      // [CHANGE] Use the dedicated axios API function
       const response = await updateHREmployeeProfile(singleEmployee._id, allowedUpdates);
 
       setSingleEmployee(response.data.employee);
       alert(response.data.message); 
       if (employees.length > 0) fetchAllEmployees();
     } catch (err) {
-      setError(err.response?.data?.message || 'Error updating employee profile.');
+      setError(err.message || 'Error updating employee profile (Mock).');
     } finally {
       setLoading(false);
     }
@@ -146,7 +136,7 @@ const HREmployeeManagementPage = () => {
                     <EmployeeListItem key={emp._id} employee={emp} /> 
                   ))}
                   {employees.length === 0 && !loading && (
-                    <p className="text-center text-gray-500 italic p-4">No employees loaded.</p>
+                    <p className="text-center text-gray-500 italic p-4">Click "Fetch All Employees" to load data.</p>
                   )}
                 </ul>
               </div>
@@ -160,7 +150,7 @@ const HREmployeeManagementPage = () => {
               <div className="flex items-center gap-3 mb-6">
                 <input
                   type="text"
-                  placeholder="Enter Employee ID"
+                  placeholder="Enter Employee ID (e.g., EMP001)"
                   value={employeeIdInput}
                   onChange={(e) => setEmployeeIdInput(e.target.value)}
                   className="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -191,7 +181,6 @@ const HREmployeeManagementPage = () => {
                         <FiSave /> Update Employee Info
                       </h4>
                       
-                      {/* [CHANGE] Use firstName */}
                       <div className="flex flex-col">
                         <label className="text-sm font-medium mb-1">First Name:</label>
                         <input
@@ -202,7 +191,6 @@ const HREmployeeManagementPage = () => {
                         />
                       </div>
                       
-                      {/* [CHANGE] Use lastName */}
                       <div className="flex flex-col">
                         <label className="text-sm font-medium mb-1">Last Name:</label>
                         <input
@@ -213,7 +201,6 @@ const HREmployeeManagementPage = () => {
                         />
                       </div>
 
-                      {/* [CHANGE] Use email */}
                       <div className="flex flex-col">
                         <label className="text-sm font-medium mb-1">Email:</label>
                         <input
@@ -224,7 +211,6 @@ const HREmployeeManagementPage = () => {
                         />
                       </div>
                       
-                      {/* [CHANGE] Use role */}
                       <div className="flex flex-col">
                         <label className="text-sm font-medium mb-1">Role:</label>
                         <select

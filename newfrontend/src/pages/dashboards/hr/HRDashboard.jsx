@@ -15,30 +15,20 @@ import {
 } from 'react-icons/fi';
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
-// [CHANGE] Import API functions
-import { getHREmployees, getHRLeaveRequests, approveHRLeave, rejectHRLeave } from '../../../api/hr'; 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; 
+import { getHREmployees, getHRLeaveRequests, approveHRLeave, rejectHRLeave } from './hr'; 
 
 
-// DashboardCard component remains the same
-
-// FIX: DashboardCard now receives 'navigate' as a prop and avoids calling useNavigate() internally.
 const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link, navigate }) => {
-  // Removed internal useNavigate hook call
-
   const handleClick = () => {
     if (link) {
-      navigate(link); // Use the passed navigate function for client-side routing
+      navigate(link); 
     }
   };
-
 
   return (
     <div
       className={`bg-white rounded-lg shadow-md p-5 border border-gray-200 flex flex-col justify-between h-full 
                  transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 cursor-pointer`}
-      // FIX: Use the new handleClick function for proper routing.
       onClick={link ? handleClick : undefined}
     >
       <div className="flex items-start justify-between">
@@ -71,7 +61,7 @@ const DashboardCard = ({ title, value, icon: Icon, trend, colorClass, link, navi
 
 
 const HRDashboard = () => {
-  const navigate = useNavigate(); // Correct hook call in the main component
+  const navigate = useNavigate(); 
   const [userRole] = useState('HR');
   const [loading, setLoading] = useState(true); 
   const [employees, setEmployees] = useState([]); 
@@ -84,7 +74,7 @@ const HRDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch all required data in parallel
+      // Fetch all required data in parallel using mock API
       const [employeeRes, leavesRes] = await Promise.all([
         getHREmployees(), 
         getHRLeaveRequests(), 
@@ -93,7 +83,6 @@ const HRDashboard = () => {
       setLeaves(leavesRes.data || []);
     } catch (error) {
       console.error("Error fetching HR dashboard data:", error);
-      // Fail gracefully
       setEmployees([]);
       setLeaves([]);
     } finally {
@@ -107,14 +96,12 @@ const HRDashboard = () => {
 
   // --- Real Data Calculation ---
   const totalEmployees = employees.length;
-  // Filter for leaves with status 'Pending' (case-sensitive to the Mongoose enum)
   const pendingRequests = leaves.filter(l => l.status === 'Pending');
   
   // --- Dashboard Stat Cards Data ---
   const stats = [
     { 
       title: "Total Employees", 
-      // [CHANGE] Use real total employee count
       value: loading ? <FiLoader className="animate-spin inline" /> : totalEmployees, 
       icon: FiUsers, 
       colorClass: 'text-blue-500', 
@@ -123,7 +110,6 @@ const HRDashboard = () => {
     },
     { 
       title: "Pending Leave Requests", 
-      // [CHANGE] Use real pending request count
       value: loading ? <FiLoader className="animate-spin inline" /> : pendingRequests.length, 
       icon: FiCalendar, 
       colorClass: 'text-yellow-500', 
@@ -132,7 +118,7 @@ const HRDashboard = () => {
     },
     { 
       title: "Attendance Rate Today", 
-      value: "92.5%", // Mocked - requires attendance summary API
+      value: "92.5%", // Mocked data
       icon: FiClock, 
       colorClass: 'text-green-500', 
       trend: 0, 
@@ -140,7 +126,7 @@ const HRDashboard = () => {
     },
     { 
       title: "New Hires (Month)", 
-      value: "4", // Mocked - requires new hires count API
+      value: "4", // Mocked data
       icon: FiUser, 
       colorClass: 'text-sky-500', 
       trend: 15, 
@@ -149,14 +135,11 @@ const HRDashboard = () => {
   ];
 
   // --- Leave Requests Table Data ---
-  // Take the first 5 pending requests for the dashboard preview
   const recentPendingRequests = pendingRequests.slice(0, 5).map(leave => {
-    // Determine employee name from the populated employeeId object (User model)
     const employeeName = leave.employeeId?.firstName && leave.employeeId?.lastName
         ? `${leave.employeeId.firstName} ${leave.employeeId.lastName}`
         : leave.employeeName || 'Unknown User'; 
     
-    // Calculate duration in days (including start and end day)
     const startDate = new Date(leave.startDate);
     const endDate = new Date(leave.endDate);
     const timeDiff = Math.abs(endDate.getTime() - startDate.getTime());
@@ -217,7 +200,6 @@ const HRDashboard = () => {
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {stats.map((stat, i) => (
-                // FIX: Pass the navigate function as a prop
                 <DashboardCard key={i} {...stat} navigate={navigate} />
               ))}
             </div>

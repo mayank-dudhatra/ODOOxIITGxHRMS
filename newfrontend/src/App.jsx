@@ -21,7 +21,7 @@ import Employees from "./pages/dashboards/hr/Employees";
 import Attendence from "./pages/dashboards/hr/Attendence";
 import Leaves from "./pages/dashboards/hr/Leaves";
 import PayrollDashboard from "./pages/dashboards/payroll/PayrollDashboard"; // Corrected to point to Payroll Officer Dashboard
-import EmployeeDashboard from "./pages/dashboards/EmployeeDashboard";
+import EmployeeRoutes from "./pages/dashboards/employee/pages/EmployeeRoutes";
 import Layout from "@/components/Layout";
 // 🔹 Payroll Officer Pages
 import EmployeesPage from "./pages/dashboards/payroll/EmployeesPage";
@@ -68,7 +68,7 @@ function App() {
           </Route>
           
           {/* Employee Routes */}
-          <Route path="/employee/dashboard" element={<EmployeeDashboard />} />
+          <Route path="/employee/*" element={<EmployeeRoutes />} />
         </Routes>
       </AuthProvider>
     </Router>

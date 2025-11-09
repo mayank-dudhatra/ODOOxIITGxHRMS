@@ -5,14 +5,17 @@ import { useNavigate } from 'react-router-dom';
 import { FiClock, FiPlusCircle, FiSearch, FiEdit, FiTrash2, FiSave, FiLoader } from 'react-icons/fi'; 
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
-// [CHANGE] Import API functions from new hr.js
-import { markAttendance, getAttendanceRecords, updateAttendance, deleteAttendance } from '../../../api/hr'; 
+import { markAttendance, getAttendanceRecords, updateAttendance, deleteAttendance } from './hr'; 
 
 // Helper function to format date/time
 const formatDateTime = (dateObject) => {
     if (!dateObject) return 'N/A';
-    const datePart = dateObject.toLocaleDateString();
-    const timePart = dateObject.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Ensure dateObject is a Date instance
+    const date = typeof dateObject === 'string' ? new Date(dateObject) : dateObject;
+    if (isNaN(date.getTime())) return 'N/A';
+    
+    const datePart = date.toLocaleDateString();
+    const timePart = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return `${datePart} ${timePart}`;
 };
 
@@ -27,7 +30,6 @@ const HRAttendancePage = () => {
     const [filterId, setFilterId] = useState('');
     const [newRecordData, setNewRecordData] = useState({ 
         employeeId: '', 
-        // Default to today's date and current time for manual entry
         date: new Date().toISOString().substring(0, 10), 
         checkIn: new Date().toTimeString().substring(0, 5), 
         checkOut: '', 
@@ -41,11 +43,10 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            // [CHANGE] Use dedicated API function
             const response = await getAttendanceRecords(id); 
             setRecords(response.data);
         } catch (err) {
-            setError(err.response?.data?.message || 'Error fetching attendance records.');
+            setError(err.message || 'Error fetching attendance records from mock API.');
             setRecords([]);
         } finally {
             setLoading(false);
@@ -63,11 +64,10 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            // [CHANGE] Use dedicated API function with correct fields
             await markAttendance({
                 employeeId: newRecordData.employeeId,
-                date: newRecordData.date, // 'YYYY-MM-DD'
-                checkIn: newRecordData.checkIn, // 'HH:MM'
+                date: newRecordData.date, 
+                checkIn: newRecordData.checkIn, 
                 checkOut: newRecordData.checkOut || null,
                 status: newRecordData.status
             });
@@ -80,7 +80,7 @@ const HRAttendancePage = () => {
             });
             fetchRecords(filterId); 
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to mark attendance.');
+            setError(err.message || 'Failed to mark attendance (Mock). Check Employee ID.');
         } finally {
             setLoading(false);
         }
@@ -92,12 +92,11 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            // [CHANGE] Use dedicated API function
             await updateAttendance(isEditing, editData);
             setIsEditing(null);
             fetchRecords(filterId); 
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update record.');
+            setError(err.message || 'Failed to update record (Mock).');
         } finally {
             setLoading(false);
         }
@@ -109,11 +108,10 @@ const HRAttendancePage = () => {
         setLoading(true);
         setError(null);
         try {
-            // [CHANGE] Use dedicated API function
             await deleteAttendance(id); 
             fetchRecords(filterId); 
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to delete record.');
+            setError(err.message || 'Failed to delete record (Mock).');
         } finally {
             setLoading(false);
         }
@@ -121,11 +119,10 @@ const HRAttendancePage = () => {
     
     // Start editing a record
     const startEdit = (record) => {
-        // [CHANGE] Map existing data to edit state, ensuring date is formatted correctly
         setEditData({
             checkIn: record.checkIn,
             checkOut: record.checkOut || '',
-            date: new Date(record.date).toISOString().substring(0, 10),
+            date: record.date.substring(0, 10), 
             status: record.status
         });
         setIsEditing(record._id);
@@ -133,19 +130,18 @@ const HRAttendancePage = () => {
 
     // Render Table Row
     const RecordRow = ({ record }) => {
-        // [CHANGE] Get employee name from populated object (User model)
         const employeeName = record.employeeId?.firstName && record.employeeId?.lastName 
             ? `${record.employeeId.firstName} ${record.employeeId.lastName}` 
             : record.employeeId?.email || record.employeeId || 'N/A';
             
         const isCurrentlyEditing = isEditing === record._id;
 
-        // Combine date and time for display
-        const checkInTime = record.checkIn ? `${record.date.substring(0, 10)}T${record.checkIn}` : null;
-        const checkOutTime = record.checkOut ? `${record.date.substring(0, 10)}T${record.checkOut}` : null;
+        const baseDate = record.date.substring(0, 10);
+        const checkInTime = record.checkIn ? `${baseDate}T${record.checkIn}` : null;
+        const checkOutTime = record.checkOut ? `${baseDate}T${record.checkOut}` : null;
 
-        let checkInDisplay = checkInTime ? formatDateTime(new Date(checkInTime)) : 'N/A';
-        let checkOutDisplay = checkOutTime ? formatDateTime(new Date(checkOutTime)) : 'N/A';
+        let checkInDisplay = checkInTime ? formatDateTime(checkInTime) : 'N/A';
+        let checkOutDisplay = checkOutTime ? formatDateTime(checkOutTime) : 'N/A';
 
 
         if (isCurrentlyEditing) {
@@ -254,7 +250,7 @@ const HRAttendancePage = () => {
                     </h1>
                     <p className="text-gray-500 mb-8">Manage clock-in and clock-out logs for all employees.</p>
 
-                    {error && <div className="p-3 mb-6 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+                    {error && <div className="p-3 mb-6 bg-red-100 text-red-700 rounded-lg">Error: {error}</div>}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Column 1: Add New Record */}
@@ -265,7 +261,7 @@ const HRAttendancePage = () => {
                             <form onSubmit={handleAddRecord} className="space-y-4">
                                 <input
                                     type="text"
-                                    placeholder="Employee ID"
+                                    placeholder="Employee ID (e.g., EMP001)"
                                     value={newRecordData.employeeId}
                                     onChange={(e) => setNewRecordData({ ...newRecordData, employeeId: e.target.value })}
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
@@ -325,7 +321,7 @@ const HRAttendancePage = () => {
                             <div className="flex items-center gap-3 mb-6 p-4 border rounded-lg bg-gray-50">
                                 <input
                                     type="text"
-                                    placeholder="Filter by Employee ID (optional)"
+                                    placeholder="Filter by Employee ID (e.g., EMP001)"
                                     value={filterId}
                                     onChange={(e) => setFilterId(e.target.value)}
                                     className="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"

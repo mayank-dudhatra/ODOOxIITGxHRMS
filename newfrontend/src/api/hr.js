@@ -27,16 +27,17 @@ export const approveHRLeave = (id) => api.patch(`/hr/leaves/${id}/approve`);
 // PATCH /api/hr/leaves/:id/reject
 export const rejectHRLeave = (id) => api.patch(`/hr/leaves/${id}/reject`);
 
-// --- Attendance Management ---
-// POST /api/hr/attendance/mark
-export const markAttendance = (data) => api.post("/hr/attendance/mark", data);
+// --- Attendance Management (FIXED to use central /api/attendance route) ---
+// POST /api/attendance/mark
+export const markAttendance = (data) => api.post("/attendance/mark", data);
 
-// GET /api/hr/attendance or /api/hr/attendance/:employeeId
+// GET /api/attendance or /api/attendance/:employeeId
+// FIX: Using central "/attendance" route.
 export const getAttendanceRecords = (employeeId) => 
-  employeeId ? api.get(`/hr/attendance/${employeeId}`) : api.get("/hr/attendance");
+  employeeId ? api.get(`/attendance/${employeeId}`) : api.get("/attendance");
 
-// PATCH /api/hr/attendance/:id
-export const updateAttendance = (id, data) => api.patch(`/hr/attendance/${id}`, data);
+// PATCH /api/attendance/:id
+export const updateAttendance = (id, data) => api.patch(`/attendance/${id}`, data);
 
-// DELETE /api/hr/attendance/:id
-export const deleteAttendance = (id) => api.delete(`/hr/attendance/${id}`);
+// DELETE /api/attendance/:id
+export const deleteAttendance = (id) => api.delete(`/attendance/${id}`);

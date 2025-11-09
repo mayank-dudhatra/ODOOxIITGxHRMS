@@ -5,16 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { FiCalendar, FiSearch, FiCheckCircle, FiXCircle, FiLoader } from 'react-icons/fi';
 import Navbar from '../hr/Navbar';
 import Sidebar from '../hr/Sidebar';
-// [CHANGE] Import API functions from new hr.js
-import { getHRLeaveRequests, approveHRLeave, rejectHRLeave } from '../../../api/hr'; 
+import { getHRLeaveRequests, approveHRLeave, rejectHRLeave } from './hr'; 
 
 // Helper function to format date
 const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
+    // Use substring for mock data consistency with the Date object
+    return new Date(dateString.substring(0, 10)).toLocaleDateString();
 };
 
-// [CHANGE] Check for Capitalized Status values from Mongoose Enum
 const getStatusBadge = (status) => {
     switch (status) {
         case 'Approved': 
@@ -42,23 +41,24 @@ const HRLeavePage = () => {
         setLoading(true);
         setError(null);
         try {
-            // [CHANGE] Use the dedicated API function
             const response = await getHRLeaveRequests(); 
             
             let filteredData = response.data || [];
+            
+            // Client-side filtering logic based on mock data fields
             if (id) {
-                 // Client-side filter: match ID in employeeId object (populated ID) or employeeName
+                const searchId = id.toLowerCase();
                 filteredData = filteredData.filter(leave => 
-                    leave.employeeId?.toString() === id || 
-                    leave.employeeId?.loginId === id ||
-                    leave.employeeId?.firstName?.toLowerCase().includes(id.toLowerCase()) ||
-                    leave.employeeId?.lastName?.toLowerCase().includes(id.toLowerCase())
+                    leave.employeeId?._id?.toLowerCase() === searchId || 
+                    leave.employeeId?.loginId?.toLowerCase() === searchId ||
+                    leave.employeeId?.firstName?.toLowerCase().includes(searchId) ||
+                    leave.employeeId?.lastName?.toLowerCase().includes(searchId)
                 );
             }
             
             setLeaves(filteredData);
         } catch (err) {
-            setError(err.response?.data?.message || 'Error fetching leave requests.');
+            setError(err.message || 'Error fetching leave requests from mock API.');
             setLeaves([]);
         } finally {
             setLoading(false);
@@ -75,7 +75,6 @@ const HRLeavePage = () => {
         setLoading(true);
         setError(null);
         try {
-            // [CHANGE] Use the dedicated API functions
             if (action === 'approve') {
                 await approveHRLeave(id);
             } else {
@@ -83,7 +82,7 @@ const HRLeavePage = () => {
             }
             fetchLeaves(filterId); // Refresh list
         } catch (err) {
-            setError(err.response?.data?.message || `Failed to ${action} leave request.`);
+            setError(err.message || `Failed to ${action} leave request.`);
         } finally {
             setLoading(false);
         }
@@ -91,13 +90,11 @@ const HRLeavePage = () => {
     
     // Render Table Row
     const LeaveRow = ({ leave }) => {
-        // [CHANGE] Access names from the populated employeeId object (User model)
         const employeeName = leave.employeeId?.firstName && leave.employeeId?.lastName 
             ? `${leave.employeeId.firstName} ${leave.employeeId.lastName}`
             : leave.employeeName || 'Unknown Employee';
         const employeeEmail = leave.employeeId?.email || 'N/A';
         
-        // [CHANGE] Status will be capitalized (Pending, Approved, Rejected)
         const statusClass = getStatusBadge(leave.status);
 
         const isPending = leave.status === 'Pending'; 

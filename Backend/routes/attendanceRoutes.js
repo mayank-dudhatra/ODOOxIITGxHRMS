@@ -1,33 +1,12 @@
-// import express from "express";
-// import {
-//   markAttendance,
-//   getEmployeeAttendance,
-//   getAttendanceByDate,
-// } from "../controllers/attendanceController.js";
-
-// const router = express.Router();
-
-// // POST - mark attendance
-// router.post("/mark", markAttendance);
-
-// // GET - fetch attendance of a specific employee
-// router.get("/employee/:employeeId", getEmployeeAttendance);
-
-// // GET - fetch attendance for a particular date (for HR/admin)
-// router.get("/date/:date", getAttendanceByDate);
-
-// router.put("/update/:id", updateAttendance);
-
-// export default router;
-
-
 import express from "express";
 import {
   markAttendance,
   getAttendanceRecords,
   updateAttendanceRecord,
   deleteAttendanceRecord,
-} from "../controllers/attendanceController.js"; // Import new controller functions
+} from "../controllers/attendanceController.js"; 
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import { roleMiddleware } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
@@ -36,17 +15,22 @@ const router = express.Router();
    Base URL → /api/attendance
    ========================================================== */
 
-// 🔹 POST to manually mark attendance (used by HR) or employee check-in/out
+// Middleware for Admin/HR/Payroll access (Adjust roles as needed, assuming Admin/HR/Payroll can manage attendance)
+const protectedAttendance = [authMiddleware, roleMiddleware("CompanyAdmin", "HR", "Payroll")];
+
+// 🔹 POST to manually mark attendance (used by HR/Employee)
 router.post("/mark", markAttendance); 
 
-// 🔹 GET all records or filter by ID (GET / or GET /:id)
-router.get("/:id", getAttendanceRecords);
-router.get("/", getAttendanceRecords);
+// 🔹 GET all records (Admin/HR/Payroll)
+router.get("/", protectedAttendance, getAttendanceRecords);
 
-// 🔹 PATCH to update a record (used by HR)
-router.patch("/:id", updateAttendanceRecord);
+// 🔹 GET records filtered by ID (HR specific, fetching single employee)
+router.get("/:id", protectedAttendance, getAttendanceRecords);
 
-// 🔹 DELETE a record (used by HR)
-router.delete("/:id", deleteAttendanceRecord);
+// 🔹 PATCH to update a record (used by HR/Admin)
+router.patch("/:id", protectedAttendance, updateAttendanceRecord);
+
+// 🔹 DELETE a record (used by HR/Admin)
+router.delete("/:id", protectedAttendance, deleteAttendanceRecord);
 
 export default router;

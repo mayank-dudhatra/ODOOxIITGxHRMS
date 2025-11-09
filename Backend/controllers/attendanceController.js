@@ -5,210 +5,143 @@ import Employee from "../models/Employee.js";
    ⏰ ATTENDANCE CONTROLLER — For HR and Employee
    ============================================================ */
 
-// ✅ 1. Mark or update attendance for an employee
+// Helper to handle date comparison for querying today's attendance
+const getStartOfDay = (date = new Date()) => {
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+// 🟢 Mark or update attendance (Employee check-in/out, or HR manual entry)
 export const markAttendance = async (req, res) => {
   try {
-    const { employeeId, date, status, checkInTime, checkOutTime, remarks } = req.body;
+    const { employeeId, date, status, checkIn, checkOut, remarks } = req.body;
+    
+    const idToUse = employeeId || req.user?._id; 
 
-    if (!employeeId || !date)
-      return res.status(400).json({ message: "Employee ID and date are required" });
+    if (!idToUse || !date)
+      return res.status(400).json({ message: "Employee ID and date are required." });
 
-    const employee = await Employee.findById(employeeId);
+    const attendanceDate = getStartOfDay(new Date(date));
+
+    // Find the corresponding Employee Profile
+    const employee = await Employee.findOne({ $or: [{ userId: idToUse }, { _id: idToUse }] });
     if (!employee)
-      return res.status(404).json({ message: "Employee not found" });
-
-    // Create or update attendance for the same date
+      return res.status(404).json({ message: "Employee profile not found." });
+      
+    // Find or create attendance record using Employee's Mongoose _id
     const attendance = await Attendance.findOneAndUpdate(
-      { employee: employeeId, date: new Date(date) },
-      { status, checkInTime, checkOutTime, remarks },
-      { new: true, upsert: true } // If not found, create it
+      { employee: employee._id, date: attendanceDate },
+      { 
+        status, 
+        checkIn: checkIn || (status === 'Present' ? new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : null),
+        checkOut, 
+        remarks 
+      },
+      { new: true, upsert: true }
     );
 
     res.status(200).json({
-      message: "Attendance marked successfully",
+      message: "Attendance marked successfully.",
       data: attendance,
     });
   } catch (error) {
     console.error("❌ Error marking attendance:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({ message: "Server Error during attendance marking.", error: error.message });
   }
 };
 
-// ✅ 2. Get attendance of a specific employee
-export const getEmployeeAttendance = async (req, res) => {
+
+// 🟢 Get attendance records (All records, or filtered by employee ID if :id is provided)
+export const getAttendanceRecords = async (req, res) => {
   try {
-    const { employeeId } = req.params;
-    const attendance = await Attendance.find({ employee: employeeId })
+    const { id } = req.params; 
+    const { date } = req.query; 
+
+    let query = {};
+    
+    if (id) {
+        const employeeProfile = await Employee.findOne({ $or: [{ userId: id }, { _id: id }] });
+        
+        if (!employeeProfile) {
+             return res.status(200).json([]);
+        }
+        // NOTE: The Attendance model uses 'employeeId' as the reference field
+        query.employeeId = employeeProfile._id; 
+    }
+    
+    if (date) {
+        query.date = getStartOfDay(new Date(date));
+    }
+
+    const records = await Attendance.find(query)
       .sort({ date: -1 })
-      .populate("employee", "firstName lastName department");
+      .populate("employeeId", "firstName lastName email userId role designation");
 
-    res.status(200).json(attendance);
+    const formattedRecords = records.map(record => ({
+        _id: record._id,
+        date: record.date,
+        status: record.status,
+        checkIn: record.checkIn,
+        checkOut: record.checkOut,
+        remarks: record.remarks,
+        employeeId: {
+            _id: record.employeeId?._id,
+            loginId: record.employeeId?.userId, 
+            firstName: record.employeeId?.firstName,
+            lastName: record.employeeId?.lastName,
+            email: record.employeeId?.email,
+            designation: record.employeeId?.designation,
+        }
+    }));
+
+    res.status(200).json(formattedRecords);
   } catch (error) {
-    console.error("❌ Error fetching attendance:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error("❌ Error fetching attendance records:", error);
+    res.status(500).json({ message: "Server Error fetching attendance records.", error: error.message });
   }
 };
 
-// ✅ 3. Get attendance by specific date (for admin/HR view)
-export const getAttendanceByDate = async (req, res) => {
+// 🟡 Update attendance manually (for HR/Admin)
+export const updateAttendanceRecord = async (req, res) => {
   try {
-    const { date } = req.params;
-    const attendance = await Attendance.find({ date: new Date(date) })
-      .populate("employee", "firstName lastName department designation");
+    const { id } = req.params; 
+    const { status, checkIn, checkOut, remarks, date } = req.body;
 
-    res.status(200).json(attendance);
-  } catch (error) {
-    console.error("❌ Error fetching date-wise attendance:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
-  }
-};
+    const updateFields = {
+        status, 
+        checkIn, 
+        checkOut, 
+        remarks
+    };
 
-// ✅ 4. Update attendance manually (for HR/Admin)
-export const updateAttendance = async (req, res) => {
-  try {
-    const { id } = req.params; // attendance record ID
-    const { status, checkInTime, checkOutTime, remarks } = req.body;
-
-    const attendance = await Attendance.findById(id);
-    if (!attendance)
+    if (date) {
+        updateFields.date = getStartOfDay(new Date(date));
+    }
+    
+    const record = await Attendance.findByIdAndUpdate(id, { $set: updateFields }, { new: true, runValidators: true });
+    
+    if (!record) {
       return res.status(404).json({ message: "Attendance record not found" });
-
-    attendance.status = status || attendance.status;
-    attendance.checkInTime = checkInTime || attendance.checkInTime;
-    attendance.checkOutTime = checkOutTime || attendance.checkOutTime;
-    attendance.remarks = remarks || attendance.remarks;
-    await attendance.save();
-
-    res.status(200).json({
-      message: "Attendance updated successfully",
-      data: attendance,
-    });
+    }
+    
+    res.status(200).json({ message: "Attendance record updated successfully", record });
   } catch (error) {
-    console.error("❌ Error updating attendance:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    console.error("❌ Error updating attendance record:", error.message);
+    res.status(500).json({ message: "Error updating attendance record", error: error.message });
   }
 };
 
-
-
-
-
-
-// // import Attendance from "../models/Attendance.js";
-// // import Employee from "../models/Employee.js";
-
-// // // ✅ Mark or update attendance for an employee
-// // export const markAttendance = async (req, res) => {
-// //   try {
-// //     const { employeeId, date, status, checkInTime, checkOutTime, remarks } = req.body;
-
-// //     if (!employeeId || !date)
-// //       return res.status(400).json({ message: "Employee ID and date are required" });
-
-// //     const employee = await Employee.findById(employeeId);
-// //     if (!employee)
-// //       return res.status(404).json({ message: "Employee not found" });
-
-// //     const attendance = await Attendance.findOneAndUpdate(
-// //       { employee: employeeId, date: new Date(date) },
-// //       { status, checkInTime, checkOutTime, remarks },
-// //       { new: true, upsert: true } // if not found, create it
-// //     );
-
-// //     res.status(200).json({
-// //       message: "Attendance marked successfully",
-// //       data: attendance,
-// //     });
-// //   } catch (error) {
-// //     console.error("❌ Error marking attendance:", error);
-// //     res.status(500).json({ message: "Server Error", error: error.message });
-// //   }
-// // };
-
-// // // ✅ Get attendance of a specific employee
-// // export const getEmployeeAttendance = async (req, res) => {
-// //   try {
-// //     const { employeeId } = req.params;
-// //     const attendance = await Attendance.find({ employee: employeeId })
-// //       .sort({ date: -1 })
-// //       .populate("employee", "firstName lastName department");
-
-// //     res.status(200).json(attendance);
-// //   } catch (error) {
-// //     console.error("❌ Error fetching attendance:", error);
-// //     res.status(500).json({ message: "Server Error", error: error.message });
-// //   }
-// // };
-
-// // // ✅ Get attendance for a specific date (for admin/HR view)
-// // export const getAttendanceByDate = async (req, res) => {
-// //   try {
-// //     const { date } = req.params;
-// //     const attendance = await Attendance.find({ date: new Date(date) })
-// //       .populate("employee", "firstName lastName department designation");
-
-// //     res.status(200).json(attendance);
-// //   } catch (error) {
-// //     console.error("❌ Error fetching date-wise attendance:", error);
-// //     res.status(500).json({ message: "Server Error", error: error.message });
-// //   }
-// // };
-
-// // // ✅ Update attendance status manually (for HR/Admin)
-// // export const updateAttendance = async (req, res) => {
-// //   try {
-// //     const { id } = req.params; // attendance record ID
-// //     const { status, checkInTime, checkOutTime, remarks } = req.body;
-
-// //     const attendance = await Attendance.findById(id);
-// //     if (!attendance) {
-// //       return res.status(404).json({ message: "Attendance record not found" });
-// //     }
-
-// //     attendance.status = status || attendance.status;
-// //     attendance.checkInTime = checkInTime || attendance.checkInTime;
-// //     attendance.checkOutTime = checkOutTime || attendance.checkOutTime;
-// //     attendance.remarks = remarks || attendance.remarks;
-// //     await attendance.save();
-
-// //     res.status(200).json({
-// //       message: "Attendance updated successfully",
-// //       data: attendance,
-// //     });
-// //   } catch (error) {
-// //     console.error("❌ Error updating attendance:", error);
-// //     res.status(500).json({ message: "Server Error", error: error.message });
-// //   }
-// // };
-
-
-// // Placeholder for the Attendance Model import (assuming you'll create one)
-// // import Attendance from "../models/Attendance.js"; 
-
-// /* =============================================================
-//    ⏰ ATTENDANCE CONTROLLER — For HR and Employee
-//    ============================================================= */
-
-// // 🔹 POST /api/attendance/mark
-// export const markAttendance = (req, res) => {
-//     // Logic to clock-in or clock-out
-//     res.status(501).json({ message: "Attendance: POST /mark not fully implemented yet." });
-// };
-
-// // 🔹 GET /api/attendance or /api/attendance/:id
-// export const getAttendanceRecords = (req, res) => {
-//     // Logic to fetch all records or filtered by employee ID
-//     res.status(501).json({ message: "Attendance: GET / records not fully implemented yet." });
-// };
-
-// // 🔹 PATCH /api/attendance/:id
-// export const updateAttendanceRecord = (req, res) => {
-//     // Logic to update clock-in/out times (used by HR)
-//     res.status(501).json({ message: "Attendance: PATCH /:id update not fully implemented yet." });
-// };
-
-// // 🔹 DELETE /api/attendance/:id
-// export const deleteAttendanceRecord = (req, res) => {
-//     // Logic to delete an attendance record (used by HR)
-//     res.status(501).json({ message: "Attendance: DELETE /:id not fully implemented yet." });
-// };
+// 🔴 Delete attendance record (for HR/Admin)
+export const deleteAttendanceRecord = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const record = await Attendance.findByIdAndDelete(id);
+    if (!record) {
+      return res.status(404).json({ message: "Attendance record not found" });
+    }
+    res.status(200).json({ message: "Attendance record deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error deleting attendance record:", error.message);
+    res.status(500).json({ message: "Error deleting attendance record", error: error.message });
+  }
+};
