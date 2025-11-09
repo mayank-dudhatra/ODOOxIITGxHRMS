@@ -17,7 +17,7 @@ import attendanceRoutes from "./routes/attendanceRoutes.js"; // ✅ ADD THIS IMP
 dotenv.config();
 
 // 🔹 Initialize Express App
-const app = express();
+const app = express(); // <--- THIS LINE WAS MISSING OR MOVED, CAUSING THE ERROR
 const PORT = process.env.PORT || 5000;
 
 // ✅ Connect MongoDB
@@ -47,8 +47,6 @@ app.use("/api/payroll", payrollRoutes);
 app.use("/api/payslip", payslipRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/attendance", attendanceRoutes);
-
 
 // ✅ Root Route
 app.get("/", (req, res) => {
